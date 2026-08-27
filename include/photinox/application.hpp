@@ -18,6 +18,7 @@ namespace photinox
         Application& operator=(Application&&) noexcept;
 
         [[nodiscard]] std::string_view NativeVersion() const noexcept;
+        [[nodiscard]] bool IsRunning() const noexcept;
 
     private:
         class Impl;

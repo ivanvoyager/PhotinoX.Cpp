@@ -26,4 +26,9 @@ namespace photinox
         const char* version = impl_->library.GetVersion();
         return version ? std::string_view(version) : std::string_view();
     }
+
+    bool Application::IsRunning() const noexcept
+    {
+        return impl_->library.IsApplicationRunning();
+    }
 }
