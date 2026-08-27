@@ -1,7 +1,7 @@
 name: Build
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
   push:
     branches: [main]
   pull_request:
@@ -9,12 +9,19 @@ on:
 
 jobs:
   build-windows:
-    name: Windows x64
-    runs-on: windows-latest
+    name: Windows ${{ matrix.arch }} ${{ matrix.preset }}
+    runs-on: ${{ matrix.runner }}
 
     strategy:
+      fail-fast: false
       matrix:
         preset: [debug, release]
+        arch: [x64, arm64]
+        include:
+          - arch: x64
+            runner: windows-latest
+          - arch: arm64
+            runner: windows-11-arm
 
     steps:
       - name: Checkout
@@ -23,7 +30,7 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64
+          arch: ${{ matrix.arch }}
 
       - name: Configure
         run: cmake --preset ${{ matrix.preset }}
@@ -47,12 +54,19 @@ jobs:
           }
 
   build-linux:
-    name: Linux x64
-    runs-on: ubuntu-22.04
+    name: Linux ${{ matrix.arch }} ${{ matrix.preset }}
+    runs-on: ${{ matrix.runner }}
 
     strategy:
+      fail-fast: false
       matrix:
         preset: [debug, release]
+        arch: [x64, arm64]
+        include:
+          - arch: x64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
 
     steps:
       - name: Checkout
@@ -87,12 +101,19 @@ jobs:
           "$executable"
 
   build-macos:
-    name: macOS
-    runs-on: macos-latest
+    name: macOS ${{ matrix.arch }} ${{ matrix.preset }}
+    runs-on: ${{ matrix.runner }}
 
     strategy:
+      fail-fast: false
       matrix:
         preset: [debug, release]
+        arch: [x64, arm64]
+        include:
+          - arch: x64
+            runner: macos-15-intel
+          - arch: arm64
+            runner: macos-latest
 
     steps:
       - name: Checkout
