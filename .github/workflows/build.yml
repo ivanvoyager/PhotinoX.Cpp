@@ -1,0 +1,119 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-windows:
+    name: Windows x64
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        preset: [debug, release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+
+      - name: Run HelloWorld
+        shell: pwsh
+        run: |
+          $executable = ".\build\${{ matrix.preset }}\samples\HelloWorld\PhotinoX.Cpp.HelloWorld.exe"
+
+          if (-not (Test-Path $executable)) {
+            throw "Executable not found: $executable"
+          }
+
+          & $executable
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "HelloWorld failed with exit code $LASTEXITCODE."
+          }
+
+  build-linux:
+    name: Linux x64
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        preset: [debug, release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libnotify-dev
+
+      - name: Configure
+        run: cmake --preset "${{ matrix.preset }}"
+
+      - name: Build
+        run: cmake --build --preset "${{ matrix.preset }}"
+
+      - name: Run HelloWorld
+        run: |
+          executable="./build/${{ matrix.preset }}/samples/HelloWorld/PhotinoX.Cpp.HelloWorld"
+
+          if [ ! -x "$executable" ]; then
+            echo "Executable not found: $executable"
+            exit 1
+          fi
+
+          "$executable"
+
+  build-macos:
+    name: macOS
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        preset: [debug, release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Ninja
+        run: brew install ninja
+
+      - name: Configure
+        run: cmake --preset "${{ matrix.preset }}"
+
+      - name: Build
+        run: cmake --build --preset "${{ matrix.preset }}"
+
+      - name: Run HelloWorld
+        run: |
+          executable="./build/${{ matrix.preset }}/samples/HelloWorld/PhotinoX.Cpp.HelloWorld"
+
+          if [ ! -x "$executable" ]; then
+            echo "Executable not found: $executable"
+            exit 1
+          fi
+
+          "$executable"
