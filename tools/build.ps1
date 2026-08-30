@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("debug", "release")]
+    [ValidateSet("debug", "release", "debug-local")]
     [string] $Preset = "debug"
 )
 
@@ -30,9 +30,10 @@ Enter-VsDevShell `
     -SkipAutomaticLocation `
     -DevCmdArguments "-arch=x64 -host_arch=x64"
 
+$BuildDirectory = $Preset -replace "-local$", ""
 $ExecutablePath = Join-Path `
     $RootDirectory `
-    "build/$Preset/samples/HelloWorld/PhotinoX.Cpp.HelloWorld.exe"
+    "build/$BuildDirectory/samples/HelloWorld/PhotinoX.Cpp.HelloWorld.exe"
 
 Push-Location $RootDirectory
 

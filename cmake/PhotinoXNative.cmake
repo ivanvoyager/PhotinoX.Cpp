@@ -2,9 +2,16 @@ include(FetchContent)
 
 set(
     PHOTINOX_NATIVE_VERSION
-    "5.1.1"
+    "5.1.2"
     CACHE STRING
     "PhotinoX.Native package version"
+)
+
+set(
+    PHOTINOX_NATIVE_PACKAGE
+    ""
+    CACHE FILEPATH
+    "Path to a local PhotinoX.Native .nupkg package"
 )
 
 string(TOLOWER "${PHOTINOX_NATIVE_VERSION}" photinox_native_version_lower)
@@ -40,10 +47,31 @@ set(
     "${photinox_native_os}-${photinox_native_arch}"
 )
 
+if(PHOTINOX_NATIVE_PACKAGE)
+    get_filename_component(
+        PHOTINOX_NATIVE_PACKAGE
+        "${PHOTINOX_NATIVE_PACKAGE}"
+        ABSOLUTE
+    )
+
+    if(NOT EXISTS "${PHOTINOX_NATIVE_PACKAGE}")
+        message(
+            FATAL_ERROR
+            "Local PhotinoX.Native package was not found: ${PHOTINOX_NATIVE_PACKAGE}"
+        )
+    endif()
+
+    set(photinox_native_package_url "${PHOTINOX_NATIVE_PACKAGE}")
+else()
+    set(
+        photinox_native_package_url
+        "https://api.nuget.org/v3-flatcontainer/photinox.native/${photinox_native_version_lower}/photinox.native.${photinox_native_version_lower}.nupkg"
+    )
+endif()
+
 FetchContent_Declare(
     PhotinoXNative
-    URL
-        "https://api.nuget.org/v3-flatcontainer/photinox.native/${photinox_native_version_lower}/photinox.native.${photinox_native_version_lower}.nupkg"
+    URL "${photinox_native_package_url}"
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 

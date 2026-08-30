@@ -17,12 +17,15 @@ target_sources(
     PRIVATE
         src/native/library.cpp
         src/native/library.hpp
+        src/native/application.hpp
         src/application.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/photinox/application.hpp
+            include/photinox/callbacks.hpp
+            include/photinox/enums.hpp
             include/photinox/error.hpp
             include/photinox/photinox.hpp
             include/photinox/result.hpp

@@ -6,8 +6,21 @@ int main()
 {
     photinox::Application application;
 
-    std::cout << application.NativeVersion() << '\n';
-    std::cout << std::boolalpha << application.IsRunning() << '\n';
+    application
+        .SetName("PhotinoX.Cpp HelloWorld")
+        .SetNotificationsEnabled(false)
+        .OnStartup([&application]
+        {
+            std::cout << "Started" << '\n';
+            application.Shutdown(0, true);
+        })
+        .OnExit([](int exitCode)
+        {
+            std::cout << "Exited: " << exitCode << '\n';
+            return exitCode;
+        });
 
-    return 0;
+    std::cout << "Native: " << application.NativeVersion() << '\n';
+
+    return application.Run();
 }

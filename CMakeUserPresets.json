@@ -1,0 +1,18 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "debug-local",
+      "inherits": "debug",
+      "cacheVariables": {
+        "PHOTINOX_NATIVE_PACKAGE": "../PhotinoX.Native/tools/PhotinoX.Native.5.1.2.nupkg"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug-local",
+      "configurePreset": "debug-local"
+    }
+  ]
+}

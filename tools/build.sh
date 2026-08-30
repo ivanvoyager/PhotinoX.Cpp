@@ -3,9 +3,10 @@
 set -euo pipefail
 
 preset="${1:-debug}"
+build_directory="${preset%-local}"
 
 case "$preset" in
-    debug|release)
+    debug|release|debug-local|release-local)
         ;;
     *)
         echo "Usage: $0 [debug|release]" >&2
@@ -14,7 +15,7 @@ case "$preset" in
 esac
 
 root_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-executable_path="$root_directory/build/$preset/samples/HelloWorld/PhotinoX.Cpp.HelloWorld"
+executable_path="$root_directory/build/$build_directory/samples/HelloWorld/PhotinoX.Cpp.HelloWorld"
 
 cd "$root_directory"
 
