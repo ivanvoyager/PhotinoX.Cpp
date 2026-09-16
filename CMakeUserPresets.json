@@ -5,7 +5,7 @@
       "name": "debug-local",
       "inherits": "debug",
       "cacheVariables": {
-        "PHOTINOX_NATIVE_PACKAGE": "../PhotinoX.Native/tools/PhotinoX.Native.5.1.2.nupkg"
+        "PHOTINOX_NATIVE_PACKAGE": "../PhotinoX.Native/tools/PhotinoX.Native.5.2.0.nupkg"
       }
     }
   ],

@@ -19,4 +19,14 @@ namespace photinox
         TimedOut = 3
     };
     static_assert(sizeof(NotificationDismissalReason) == sizeof(int));
+
+    enum class NotifyCollectionChangedAction : int
+    {
+        Add = 0,
+        Remove = 1,
+        Replace = 2,
+        Move = 3,
+        Reset = 4
+    };
+    static_assert(sizeof(NotifyCollectionChangedAction) == sizeof(int));
 }

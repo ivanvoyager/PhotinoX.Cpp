@@ -11,22 +11,25 @@ namespace photinox::native
     using ShutdownRequestedCallback = bool (*)(ShutdownRequestReason reason, void* state);
     using ExitCallback = int (*)(int exitCode, void* state);
 
-    using NotificationActivatedCallback = void (*)(int notificationId, void* state);
-    using NotificationActionActivatedCallback = void (*)(int notificationId, int actionIndex, void* state);
-    using NotificationInputActivatedCallback = void (*)(int notificationId, const char* response, void* state);
-    using NotificationDismissedCallback = void (*)(int notificationId, NotificationDismissalReason reason, void* state);
-    using NotificationFailedCallback = void (*)(int notificationId, void* state);
+    using WindowCollectionChangedCallback = void (*)(NotifyCollectionChangedAction action, void* const* newItems, int newItemsCount, void* const* oldItems, int oldItemsCount, void* state);
+
+    using NotificationActivatedCallback = void (*)(int notificationId, void* notificationState, void* state);
+    using NotificationActionActivatedCallback = void (*)(int notificationId, int actionIndex, void* notificationState, void* state);
+    using NotificationInputActivatedCallback = void (*)(int notificationId, const char* response, void* notificationState, void* state);
+    using NotificationDismissedCallback = void (*)(int notificationId, NotificationDismissalReason reason, void* notificationState, void* state);
+    using NotificationFailedCallback = void (*)(int notificationId, void* notificationState, void* state);
 
     struct ApplicationInitCallbacks
     {
         StartupCallback startupHandler;
         ShutdownRequestedCallback shutdownRequestedHandler;
         ExitCallback exitHandler;
+        WindowCollectionChangedCallback windowCollectionChangedHandler;
         void* callbackState;
     };
 
     static_assert(std::is_standard_layout_v<ApplicationInitCallbacks>);
-    static_assert(sizeof(ApplicationInitCallbacks) == 32);
+    static_assert(sizeof(ApplicationInitCallbacks) == 40);
 
     struct ApplicationInitOptions
     {
@@ -67,8 +70,8 @@ namespace photinox::native
     static_assert(std::is_standard_layout_v<ApplicationInitParams>);
 
     static_assert(offsetof(ApplicationInitParams, callbacks) == 8);
-    static_assert(offsetof(ApplicationInitParams, options) == 40);
-    static_assert(offsetof(ApplicationInitParams, notificationCallbacks) == 72);
+    static_assert(offsetof(ApplicationInitParams, options) == 48);
+    static_assert(offsetof(ApplicationInitParams, notificationCallbacks) == 80);
 
-    static_assert(sizeof(ApplicationInitParams) == 112);
+    static_assert(sizeof(ApplicationInitParams) == 120);
 }

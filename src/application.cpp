@@ -1,6 +1,7 @@
 #include <photinox/application.hpp>
 
 #include "native/library.hpp"
+#include <eventpp/callbacklist.h>
 
 #include <exception>
 #include <string>
@@ -19,9 +20,10 @@ namespace photinox
 
         bool notificationsEnabled = true;
 
-        StartupHandler startupHandler;
-        ShutdownRequestedHandler shutdownRequestedHandler;
-        ExitHandler exitHandler;
+        eventpp::CallbackList<void()> startupHandlers;
+        eventpp::CallbackList<void(ShutdownRequestedEventArgs&)> shutdownRequestedHandlers;
+        eventpp::CallbackList<void(ExitEventArgs&)> exitHandlers;
+
 
         std::exception_ptr callbackException;
 
@@ -35,6 +37,7 @@ namespace photinox
             params.callbacks.startupHandler = StartupCallback;
             params.callbacks.shutdownRequestedHandler = ShutdownRequestedCallback;
             params.callbacks.exitHandler = ExitCallback;
+            params.callbacks.windowCollectionChangedHandler = WindowCollectionChangedCallback;
             params.callbacks.callbackState = this;
 
             params.options.applicationName = name.empty() ? nullptr : name.c_str();
@@ -51,12 +54,9 @@ namespace photinox
         {
             auto& impl = *static_cast<Impl*>(state);
 
-            if (!impl.startupHandler)
-                return;
-
             try
             {
-                impl.startupHandler();
+                impl.startupHandlers();
             }
             catch (...)
             {
@@ -69,12 +69,16 @@ namespace photinox
         {
             auto& impl = *static_cast<Impl*>(state);
 
-            if (!impl.shutdownRequestedHandler)
-                return false;
-
             try
             {
-                return impl.shutdownRequestedHandler(reason);
+                ShutdownRequestedEventArgs args
+                {
+                    .reason = reason
+                };
+
+                impl.shutdownRequestedHandlers(args);
+
+                return args.cancel;
             }
             catch (...)
             {
@@ -87,18 +91,28 @@ namespace photinox
         {
             auto& impl = *static_cast<Impl*>(state);
 
-            if (!impl.exitHandler)
-                return exitCode;
-
             try
             {
-                return impl.exitHandler(exitCode);
+                ExitEventArgs args
+                {
+                    .applicationExitCode = exitCode
+                };
+
+                impl.exitHandlers(args);
+
+                return args.applicationExitCode;
             }
             catch (...)
             {
                 impl.callbackException = std::current_exception();
                 return exitCode;
             }
+        }
+
+        static void WindowCollectionChangedCallback(NotifyCollectionChangedAction action, void* const* newItems, int newItemsCount, void* const* oldItems, int oldItemsCount, void* state) noexcept
+        {
+            auto& impl = *static_cast<Impl*>(state);
+
         }
     };
 
@@ -137,21 +151,21 @@ namespace photinox
         return *this;
     }
 
-    Application& Application::OnStartup(StartupHandler handler)
+    Application& Application::RegisterStartupHandler(StartupHandler handler)
     {
-        impl_->startupHandler = std::move(handler);
+        impl_->startupHandlers.append(std::move(handler));
         return *this;
     }
 
-    Application& Application::OnShutdownRequested(ShutdownRequestedHandler handler)
+    Application& Application::RegisterShutdownRequestedHandler(ShutdownRequestedHandler handler)
     {
-        impl_->shutdownRequestedHandler = std::move(handler);
+        impl_->shutdownRequestedHandlers.append(std::move(handler));
         return *this;
     }
 
-    Application& Application::OnExit(ExitHandler handler)
+    Application& Application::RegisterExitHandler(ExitHandler handler)
     {
-        impl_->exitHandler = std::move(handler);
+        impl_->exitHandlers.append(std::move(handler));
         return *this;
     }
 

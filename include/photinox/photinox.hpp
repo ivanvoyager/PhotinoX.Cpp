@@ -3,6 +3,7 @@
 #include <photinox/application.hpp>
 #include <photinox/callbacks.hpp>
 #include <photinox/enums.hpp>
+#include <photinox/event_args.hpp>
 #include <photinox/error.hpp>
 #include <photinox/result.hpp>
 #include <photinox/version.hpp>

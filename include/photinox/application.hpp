@@ -24,9 +24,9 @@ namespace photinox
         Application& SetNotificationRegistrationId(std::string_view registrationId);
         Application& SetNotificationsEnabled(bool enabled) noexcept;
 
-        Application& OnStartup(StartupHandler handler);
-        Application& OnShutdownRequested(ShutdownRequestedHandler handler);
-        Application& OnExit(ExitHandler handler);
+        Application& RegisterStartupHandler(StartupHandler handler);
+        Application& RegisterShutdownRequestedHandler(ShutdownRequestedHandler handler);
+        Application& RegisterExitHandler(ExitHandler handler);
 
         [[nodiscard]] std::string_view NativeVersion() const noexcept;
 

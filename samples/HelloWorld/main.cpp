@@ -2,22 +2,27 @@
 
 #include <iostream>
 
+using namespace photinox;
+
 int main()
 {
-    photinox::Application application;
+    Application application;
 
     application
         .SetName("PhotinoX.Cpp HelloWorld")
         .SetNotificationsEnabled(false)
-        .OnStartup([&application]
+        .RegisterStartupHandler([]
         {
-            std::cout << "Started" << '\n';
-            application.Shutdown(0, true);
+                std::cout << "First startup handler" << '\n';
         })
-        .OnExit([](int exitCode)
+        .RegisterStartupHandler([&application]
         {
-            std::cout << "Exited: " << exitCode << '\n';
-            return exitCode;
+                std::cout << "Second startup handler" << '\n';
+                application.Shutdown(0, true);
+        })
+        .RegisterExitHandler([](ExitEventArgs & args)
+        {
+            std::cout << "Exit handler: " << args.applicationExitCode << '\n';
         });
 
     std::cout << "Native: " << application.NativeVersion() << '\n';

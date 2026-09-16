@@ -1,6 +1,6 @@
 param(
-    [ValidateSet("debug", "release", "debug-local")]
-    [string] $Preset = "debug"
+    [ValidateSet("debug", "release", "debug-local", "release-local")]
+    [string] $Preset
 )
 
 $ErrorActionPreference = "Stop"
@@ -8,8 +8,35 @@ $ErrorActionPreference = "Stop"
 $RootDirectory = Split-Path -Parent $PSScriptRoot
 $VsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 
-if (-not (Test-Path $VsWhere)) {
-    throw "Visual Studio Installer was not found."
+if (-not $Preset) {
+    $Preset = "debug"
+
+    $UserPresetsPath = Join-Path $RootDirectory "CMakeUserPresets.json"
+
+    if (Test-Path $UserPresetsPath) {
+        $UserPresets = Get-Content $UserPresetsPath -Raw | ConvertFrom-Json
+        $LocalPreset = $UserPresets.configurePresets |
+            Where-Object { $_.name -eq "debug-local" } |
+            Select-Object -First 1
+
+        if ($LocalPreset) {
+            $LocalPackage = $LocalPreset.cacheVariables.PHOTINOX_NATIVE_PACKAGE
+
+            if ($LocalPackage) {
+                if ([System.IO.Path]::IsPathRooted($LocalPackage)) {
+                    $LocalPackagePath = $LocalPackage
+                }
+                else {
+                    $LocalPackagePath = Join-Path $RootDirectory $LocalPackage
+                }
+
+                if (Test-Path $LocalPackagePath) {
+                    $Preset = "debug-local"
+                    Write-Host "Using local PhotinoX.Native package: $LocalPackagePath"
+                }
+            }
+        }
+    }
 }
 
 $VsInstallationPath = & $VsWhere `
@@ -17,6 +44,10 @@ $VsInstallationPath = & $VsWhere `
     -products * `
     -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
     -property installationPath
+
+if (-not (Test-Path $VsWhere)) {
+    throw "Visual Studio Installer was not found."
+}
 
 if (-not $VsInstallationPath) {
     throw "Visual Studio with C++ tools was not found."

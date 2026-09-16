@@ -8,6 +8,16 @@ project(
 
 include(cmake/PhotinoXNative.cmake)
 
+include(FetchContent)
+
+FetchContent_Declare(
+    eventpp
+    GIT_REPOSITORY https://github.com/wqking/eventpp.git
+    GIT_TAG master
+)
+
+FetchContent_MakeAvailable(eventpp)
+
 add_library(PhotinoX.Cpp STATIC)
 
 add_library(PhotinoX::Cpp ALIAS PhotinoX.Cpp)
@@ -26,6 +36,7 @@ target_sources(
             include/photinox/application.hpp
             include/photinox/callbacks.hpp
             include/photinox/enums.hpp
+            include/photinox/event_args.hpp
             include/photinox/error.hpp
             include/photinox/photinox.hpp
             include/photinox/result.hpp
@@ -37,6 +48,7 @@ target_include_directories(
     PhotinoX.Cpp
     PRIVATE
         src
+        "${eventpp_SOURCE_DIR}/include"
 )
 
 target_compile_features(
