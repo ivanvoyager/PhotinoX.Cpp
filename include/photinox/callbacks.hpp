@@ -7,6 +7,7 @@
 namespace photinox
 {
     using InvokeStateCallback = void (*)(void* state);
+    using DispatcherCallback = std::function<void()>;
 
     using StartupHandler = std::function<void()>;
     using ShutdownRequestedHandler = std::function<void(ShutdownRequestedEventArgs& args)>;

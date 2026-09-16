@@ -12,6 +12,7 @@ namespace photinox
     }
 
     class Application;
+    class Window;
 
     class Dispatcher final
     {
@@ -24,13 +25,18 @@ namespace photinox
         Dispatcher(Dispatcher&&) = delete;
         Dispatcher& operator=(Dispatcher&&) = delete;
 
-        [[nodiscard]] bool CheckAccess() const noexcept;
+        [[nodiscard]] bool CheckAccess() const;
+        void VerifyAccess() const;
 
-        [[nodiscard]] bool Invoke(InvokeStateCallback callback, void* state) const;
-        [[nodiscard]] bool BeginInvoke(InvokeStateCallback callback, void* state) const;
+        void Invoke(DispatcherCallback callback) const;
+        [[nodiscard]] bool TryInvoke(DispatcherCallback callback) const;
+        [[nodiscard]] bool BeginInvoke(DispatcherCallback callback) const;
 
     private:
         friend class Application;
+        friend class Window;
+
+        void VerifyAccessToCreateWindow();
 
         explicit Dispatcher(native::Library& library);
 

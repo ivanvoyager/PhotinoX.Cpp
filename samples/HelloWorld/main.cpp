@@ -11,9 +11,14 @@ int main()
     application
         .SetName("PhotinoX.Cpp HelloWorld")
         .SetNotificationsEnabled(false)
-        .RegisterStartupHandler([]
+        .RegisterStartupHandler([&application]
         {
                 std::cout << "First startup handler" << '\n';
+
+                application.GetDispatcher().Invoke([]
+                {
+                    std::cout << "Dispatcher invoke" << '\n';
+                });
         })
         .RegisterStartupHandler([&application]
         {

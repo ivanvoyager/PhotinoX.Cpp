@@ -2,7 +2,7 @@ include(FetchContent)
 
 set(
     PHOTINOX_NATIVE_VERSION
-    "5.1.2"
+    "5.2.0"
     CACHE STRING
     "PhotinoX.Native package version"
 )
