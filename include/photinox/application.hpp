@@ -1,6 +1,7 @@
 #pragma once
 
 #include <photinox/callbacks.hpp>
+#include <photinox/dispatcher.hpp>
 
 #include <memory>
 #include <string_view>
@@ -32,10 +33,9 @@ namespace photinox
 
         [[nodiscard]] bool IsRunning() const noexcept;
         [[nodiscard]] bool IsShuttingDown() const noexcept;
-        [[nodiscard]] bool CheckAccess() const noexcept;
 
-        [[nodiscard]] bool Invoke(InvokeStateCallback callback, void* state) const;
-        [[nodiscard]] bool BeginInvoke(InvokeStateCallback callback, void* state) const;
+        [[nodiscard]] Dispatcher& GetDispatcher() noexcept;
+        [[nodiscard]] const Dispatcher& GetDispatcher() const noexcept;
 
         [[nodiscard]] int Run();
 

@@ -28,6 +28,7 @@ target_sources(
         src/native/library.cpp
         src/native/library.hpp
         src/native/application.hpp
+        src/dispatcher.cpp
         src/application.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -35,6 +36,7 @@ target_sources(
         FILES
             include/photinox/application.hpp
             include/photinox/callbacks.hpp
+            include/photinox/dispatcher.hpp
             include/photinox/enums.hpp
             include/photinox/event_args.hpp
             include/photinox/error.hpp

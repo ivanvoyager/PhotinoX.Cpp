@@ -13,6 +13,7 @@ namespace photinox
     {
     public:
         native::Library library;
+        std::unique_ptr<Dispatcher> dispatcher;
 
         std::string name = "PhotinoX";
         std::string iconPath;
@@ -119,6 +120,7 @@ namespace photinox
     Application::Application()
         : impl_(std::make_unique<Impl>())
     {
+        impl_->dispatcher.reset(new Dispatcher(impl_->library));
     }
 
     Application::~Application() = default;
@@ -185,19 +187,14 @@ namespace photinox
         return impl_->library.ApplicationIsShuttingDown();
     }
 
-    bool Application::CheckAccess() const noexcept
+    Dispatcher& Application::GetDispatcher() noexcept
     {
-        return impl_->library.ApplicationCheckAccess();
+        return *impl_->dispatcher;
     }
 
-    bool Application::Invoke(InvokeStateCallback callback, void* state) const
+    const Dispatcher& Application::GetDispatcher() const noexcept
     {
-        return impl_->library.ApplicationInvoke(callback, state);
-    }
-
-    bool Application::BeginInvoke(InvokeStateCallback callback, void* state) const
-    {
-        return impl_->library.ApplicationBeginInvoke(callback, state);
+        return *impl_->dispatcher;
     }
 
     int Application::Run()
