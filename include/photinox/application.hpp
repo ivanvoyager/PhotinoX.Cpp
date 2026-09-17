@@ -6,8 +6,15 @@
 #include <memory>
 #include <string_view>
 
+namespace photinox::native
+{
+    class Library;
+}
+
 namespace photinox
 {
+    class Window;
+
     class Application final
     {
     public:
@@ -42,6 +49,10 @@ namespace photinox
         void Shutdown(int exitCode = 0, bool force = false) const noexcept;
 
     private:
+        friend class Window;
+
+        [[nodiscard]] native::Library& NativeLibrary() noexcept;
+
         class Impl;
         std::unique_ptr<Impl> impl_;
     };

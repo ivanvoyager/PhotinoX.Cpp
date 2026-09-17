@@ -29,4 +29,13 @@ namespace photinox
         Reset = 4
     };
     static_assert(sizeof(NotifyCollectionChangedAction) == sizeof(int));
+
+    enum class WindowState : int
+    {
+        Normal,
+        Minimized,
+        Maximized,
+        FullScreen
+    };
+    static_assert(sizeof(WindowState) == sizeof(int));
 }

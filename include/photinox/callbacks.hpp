@@ -12,4 +12,6 @@ namespace photinox
     using StartupHandler = std::function<void()>;
     using ShutdownRequestedHandler = std::function<void(ShutdownRequestedEventArgs& args)>;
     using ExitHandler = std::function<void(ExitEventArgs& args)>;
+
+    using WindowHandler = std::function<void()>;
 }

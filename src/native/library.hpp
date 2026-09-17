@@ -3,6 +3,7 @@
 #include <photinox/callbacks.hpp>
 
 #include "application.hpp"
+#include "window.hpp"
 
 namespace photinox::native
 {
@@ -20,6 +21,10 @@ namespace photinox::native
 
         [[nodiscard]] const char* GetVersion() const noexcept;
 
+        [[nodiscard]] void* WindowCreate(WindowInitParams* initParams) const;
+        [[nodiscard]] bool WindowShow(void* instance) const;
+        void WindowClose(void* instance) const noexcept;
+
         [[nodiscard]] int ApplicationRun(const ApplicationInitParams* initParams) const;
         void ApplicationShutdown(int exitCode, bool force) const noexcept;
         [[nodiscard]] bool ApplicationIsRunning() const noexcept;
@@ -36,6 +41,10 @@ namespace photinox::native
         void* handle_ = nullptr;
 
         const char* (*getVersion_)() = nullptr;
+
+        void* (*windowCreate_)(WindowInitParams*) = nullptr;
+        bool (*windowShow_)(void*) = nullptr;
+        void (*windowClose_)(void*) = nullptr;
 
         int (*applicationRun_)(const ApplicationInitParams*) = nullptr;
         void (*applicationShutdown_)(int, bool) = nullptr;

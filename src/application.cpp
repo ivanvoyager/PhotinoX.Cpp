@@ -214,4 +214,9 @@ namespace photinox
     {
         impl_->library.ApplicationShutdown(exitCode, force);
     }
+
+    native::Library& Application::NativeLibrary() noexcept
+    {
+        return impl_->library;
+    }
 }

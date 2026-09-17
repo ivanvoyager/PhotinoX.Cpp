@@ -7,30 +7,44 @@ using namespace photinox;
 int main()
 {
     Application application;
+    Window window(application);
+
+    window
+        .SetTitle("PhotinoX.Cpp HelloWorld")
+        .LoadString(
+            "<!DOCTYPE html>"
+            "<html>"
+            "<body>"
+            "<h1>PhotinoX.Cpp</h1>"
+            "</body>"
+            "</html>")
+        .RegisterCreatingHandler([]
+        {
+            std::cout << "Creating window" << '\n';
+        })
+        .RegisterCreatedHandler([]
+        {
+            std::cout << "Created window" << '\n';
+        })
+        .RegisterClosedHandler([]
+        {
+            std::cout << "Closed window" << '\n';
+        });
 
     application
         .SetName("PhotinoX.Cpp HelloWorld")
         .SetNotificationsEnabled(false)
-        .RegisterStartupHandler([&application]
+        .RegisterStartupHandler([&window]
         {
-                std::cout << "First startup handler" << '\n';
-
-                application.GetDispatcher().Invoke([]
-                {
-                    std::cout << "Dispatcher invoke" << '\n';
-                });
+            window.Show();
         })
-        .RegisterStartupHandler([&application]
+        .RegisterExitHandler([](ExitEventArgs& args)
         {
-                std::cout << "Second startup handler" << '\n';
-                application.Shutdown(0, true);
-        })
-        .RegisterExitHandler([](ExitEventArgs & args)
-        {
-            std::cout << "Exit handler: " << args.applicationExitCode << '\n';
+            std::cout
+                << "Exit handler: "
+                << args.applicationExitCode
+                << '\n';
         });
-
-    std::cout << "Native: " << application.NativeVersion() << '\n';
 
     return application.Run();
 }

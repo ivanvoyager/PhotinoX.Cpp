@@ -55,6 +55,10 @@ namespace photinox::native
         {
             getVersion_ = LoadExport<decltype(getVersion_)>("Photino_GetNativeVersion");
 
+            windowCreate_ = LoadExport<decltype(windowCreate_)>("Photino_ctor");
+            windowShow_ = LoadExport<decltype(windowShow_)>("Photino_Show");
+            windowClose_ = LoadExport<decltype(windowClose_)>("Photino_Close");
+
             applicationRun_ = LoadExport<decltype(applicationRun_)>("PhotinoApplication_Run");
             applicationShutdown_ = LoadExport<decltype(applicationShutdown_)>("PhotinoApplication_Shutdown");
             applicationIsRunning_ = LoadExport<decltype(applicationIsRunning_)>("PhotinoApplication_IsRunning");
@@ -82,6 +86,21 @@ namespace photinox::native
     const char* Library::GetVersion() const noexcept
     {
         return getVersion_();
+    }
+
+    void* Library::WindowCreate(WindowInitParams* initParams) const
+    {
+        return windowCreate_(initParams);
+    }
+
+    bool Library::WindowShow(void* instance) const
+    {
+        return windowShow_(instance);
+    }
+
+    void Library::WindowClose(void* instance) const noexcept
+    {
+        windowClose_(instance);
     }
 
     int Library::ApplicationRun(const ApplicationInitParams* initParams) const
