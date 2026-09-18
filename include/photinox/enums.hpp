@@ -39,10 +39,11 @@ namespace photinox
     };
     static_assert(sizeof(WindowState) == sizeof(int));
 
-    enum class ShutdownMode
+    enum class ShutdownMode : int
     {
         OnLastWindowClose,
         OnMainWindowClose,
         OnExplicitShutdown
     };
+    static_assert(sizeof(ShutdownMode) == sizeof(int));
 }

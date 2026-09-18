@@ -55,18 +55,22 @@ namespace photinox::native
         {
             getVersion_ = LoadExport<decltype(getVersion_)>("Photino_GetNativeVersion");
 
+            //window
             windowCreate_ = LoadExport<decltype(windowCreate_)>("Photino_ctor");
             windowShow_ = LoadExport<decltype(windowShow_)>("Photino_Show");
             windowClose_ = LoadExport<decltype(windowClose_)>("Photino_Close");
 
+            //application
             applicationRun_ = LoadExport<decltype(applicationRun_)>("PhotinoApplication_Run");
             applicationShutdown_ = LoadExport<decltype(applicationShutdown_)>("PhotinoApplication_Shutdown");
             applicationIsRunning_ = LoadExport<decltype(applicationIsRunning_)>("PhotinoApplication_IsRunning");
             applicationIsShuttingDown_ = LoadExport<decltype(applicationIsShuttingDown_)>("PhotinoApplication_IsShuttingDown");
-
             applicationCheckAccess_ = LoadExport<decltype(applicationCheckAccess_)>("PhotinoApplication_CheckAccess");
             applicationInvoke_ = LoadExport<decltype(applicationInvoke_)>("PhotinoApplication_Invoke");
             applicationBeginInvoke_ = LoadExport<decltype(applicationBeginInvoke_)>("PhotinoApplication_BeginInvoke");
+            //notifications
+            applicationGetNotificationsEnabled_ = LoadExport<decltype(applicationGetNotificationsEnabled_)>("PhotinoApplication_GetNotificationsEnabled");
+            applicationSetNotificationsEnabled_ = LoadExport<decltype(applicationSetNotificationsEnabled_)>("PhotinoApplication_SetNotificationsEnabled");
         }
         catch (...)
         {
@@ -136,5 +140,17 @@ namespace photinox::native
     bool Library::ApplicationBeginInvoke(InvokeStateCallback callback, void* state) const
     {
         return applicationBeginInvoke_(callback, state);
+    }
+
+    bool Library::ApplicationGetNotificationsEnabled() const noexcept
+    {
+        bool enabled = false;
+        applicationGetNotificationsEnabled_(&enabled);
+        return enabled;
+    }
+
+    void Library::ApplicationSetNotificationsEnabled(bool enabled) const noexcept
+    {
+        applicationSetNotificationsEnabled_(enabled);
     }
 }

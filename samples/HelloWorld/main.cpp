@@ -1,15 +1,46 @@
 #include <photinox/photinox.hpp>
 
+#include <cassert>
 #include <iostream>
 
 using namespace photinox;
 
 int main()
-{
+{   
     Application application;
     Window window(application);
 
-    application.SetShutdownMode(ShutdownMode::OnExplicitShutdown);
+    application.SetShutdownMode(ShutdownMode::OnMainWindowClose);
+
+    const EventToken token = application.SubscribeStartupHandler([]
+    {
+    });
+
+    assert(!application.UnsubscribeExitHandler(token));
+    assert(application.UnsubscribeStartupHandler(token));
+
+    const EventToken startupToken = application.SubscribeStartupHandler([]
+    {
+        std::cout << "Subscribed startup handler\n";
+    });
+    assert(startupToken);
+
+    EventToken exitToken;
+
+    exitToken = application.SubscribeExitHandler([&](ExitEventArgs&)
+        {
+            std::cout << "Subscribed exit handler\n";
+            bool removed = application.UnsubscribeExitHandler(exitToken);
+            assert(removed);
+        });
+
+    const EventToken noExitToken = application.SubscribeExitHandler([](ExitEventArgs&)
+        {
+            std::cout << "This handler must not run\n";
+        });
+
+    assert(application.UnsubscribeExitHandler(noExitToken));
+    assert(!application.UnsubscribeExitHandler(noExitToken));
 
     window
         .SetTitle("PhotinoX.Cpp HelloWorld")
@@ -36,9 +67,6 @@ int main()
         .RegisterClosedHandler([&application]
         {
             std::cout << "Closed window, count: " << application.Windows().size() << '\n';
-#ifndef NDEBUG
-            application.Shutdown(0, true);
-#endif
         });
 
     application
@@ -46,17 +74,20 @@ int main()
         .SetNotificationsEnabled(false)
         .RegisterStartupHandler([&application]
         {
-            std::cout << "Startup handler" << '\n';
-#ifdef NDEBUG
+            std::cout << "Startup handler: " << application.Name() << '\n';
+            std::cout << "Notifications enabled: " << application.NotificationsEnabled() << '\n';
+
+            application.SetNotificationsEnabled(true);
+
+            std::cout << "Notifications enabled: " << application.NotificationsEnabled() << '\n';
+
+        #ifdef NDEBUG
             application.Shutdown(0, true);
-#endif
+        #endif
         })
         .RegisterExitHandler([](ExitEventArgs& args)
         {
-            std::cout
-                << "Exit handler: "
-                << args.applicationExitCode
-                << '\n';
+            std::cout << "Exit handler: " << args.applicationExitCode  << '\n';
         });
 
     return application.Run(&window);

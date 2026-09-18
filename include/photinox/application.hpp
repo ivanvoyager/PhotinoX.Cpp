@@ -2,6 +2,7 @@
 
 #include <photinox/callbacks.hpp>
 #include <photinox/dispatcher.hpp>
+#include "event_token.hpp"
 
 #include <memory>
 #include <span>
@@ -28,15 +29,20 @@ namespace photinox
         Application(Application&&) = delete;
         Application& operator=(Application&&) = delete;
 
+        [[nodiscard]] std::string_view Name() const noexcept;
         Application& SetName(std::string_view name);
-        Application& SetIconPath(std::string_view iconPath);
-        Application& SetNotificationsEnabled(bool enabled) noexcept;
-        Application& SetNotificationRegistrationId(std::string_view registrationId);
-        Application& SetShutdownMode(ShutdownMode shutdownMode);
 
-        Application& RegisterStartupHandler(StartupHandler handler);
-        Application& RegisterShutdownRequestedHandler(ShutdownRequestedHandler handler);
-        Application& RegisterExitHandler(ExitHandler handler);
+        [[nodiscard]] std::string_view IconPath() const noexcept;
+        Application& SetIconPath(std::string_view iconPath);
+
+        [[nodiscard]] bool NotificationsEnabled() const;
+        Application& SetNotificationsEnabled(bool enabled);
+
+        [[nodiscard]] std::string_view NotificationRegistrationId() const noexcept;
+        Application& SetNotificationRegistrationId(std::string_view registrationId);
+
+        [[nodiscard]] ShutdownMode GetShutdownMode() const noexcept;
+        Application& SetShutdownMode(ShutdownMode shutdownMode);
 
         [[nodiscard]] std::string_view NativeVersion() const noexcept;
 
@@ -46,13 +52,24 @@ namespace photinox
         [[nodiscard]] Dispatcher& GetDispatcher() noexcept;
         [[nodiscard]] const Dispatcher& GetDispatcher() const noexcept;
 
-        [[nodiscard]] ShutdownMode GetShutdownMode() const noexcept;
         [[nodiscard]] Window* MainWindow() const noexcept;
         [[nodiscard]] std::span<Window* const> Windows() const noexcept;
 
         [[nodiscard]] int Run(Window* mainWindow = nullptr);
 
         void Shutdown(int exitCode = 0, bool force = false) const noexcept;
+
+        Application& RegisterStartupHandler(StartupHandler handler);
+        [[nodiscard]] EventToken SubscribeStartupHandler(StartupHandler handler);
+        bool UnsubscribeStartupHandler(EventToken token);
+
+        Application& RegisterShutdownRequestedHandler(ShutdownRequestedHandler handler);
+        [[nodiscard]] EventToken SubscribeShutdownRequestedHandler(ShutdownRequestedHandler handler);
+        bool UnsubscribeShutdownRequestedHandler(EventToken token);
+
+        Application& RegisterExitHandler(ExitHandler handler);
+        [[nodiscard]] EventToken SubscribeExitHandler(ExitHandler handler);
+        bool UnsubscribeExitHandler(EventToken token);
 
     private:
         friend class Window;
@@ -61,10 +78,12 @@ namespace photinox
         std::unique_ptr<Impl> impl_;
 
         [[nodiscard]] native::Library& NativeLibrary() noexcept;
+        void ThrowIfRunning(std::string_view memberName) const;
+        [[nodiscard]] EventToken NextEventToken();
+
+        void CloseWindows();
 
         void OnWindowCreated(Window& window, bool registered);
         void OnWindowClosed(Window& window);
-
-        void CloseWindows();
     };
 }
