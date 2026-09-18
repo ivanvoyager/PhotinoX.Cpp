@@ -14,4 +14,9 @@ namespace photinox
     {
         int applicationExitCode;
     };
+
+    struct ClosingEventArgs
+    {
+        bool cancel = false;
+    };
 }

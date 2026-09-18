@@ -36,11 +36,11 @@ namespace photinox
         friend class Application;
         friend class Window;
 
+        class Impl;
+        std::unique_ptr<Impl> impl_;
+
         void VerifyAccessToCreateWindow();
 
         explicit Dispatcher(native::Library& library);
-
-        class Impl;
-        std::unique_ptr<Impl> impl_;
     };
 }

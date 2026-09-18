@@ -18,12 +18,14 @@ namespace photinox
     class Window::Impl final
     {
     public:
-        explicit Impl(Application& application, Window* parent)
-            : application(application),
-              parent(parent)
+        explicit Impl(Window& owner, Application& application, Window* parent)
+            : owner(owner),
+            application(application),
+            parent(parent)
         {
         }
 
+        Window& owner;
         Application& application;
         Window* parent;
 
@@ -32,12 +34,14 @@ namespace photinox
 
         void* nativeInstance = nullptr;
 
-        bool isCreating = false;
-        bool isClosed = false;
-
         eventpp::CallbackList<void()> creatingHandlers;
         eventpp::CallbackList<void()> createdHandlers;
+        eventpp::CallbackList<void(ClosingEventArgs&)> closingHandlers;
         eventpp::CallbackList<void()> closedHandlers;
+
+        bool isCreating = false;
+        bool isClosed = false;
+        bool forceClose = false;
 
         native::WindowInitParams CreateInitParams() noexcept
         {
@@ -52,8 +56,9 @@ namespace photinox
                     : nullptr;
 
             params.callbacks.createdHandler = CreatedCallback;
+            params.callbacks.closingHandler = ClosingCallback;
             params.callbacks.closedHandler = ClosedCallback;
-            params.callbacks.callbackState = this;
+            params.callbacks.callbackState = &owner;
 
             params.window.title = title.c_str();
 
@@ -86,57 +91,103 @@ namespace photinox
         }
 
     private:
-        static void CreatedCallback(
-            void* instance,
-            bool registered,
-            void* state) noexcept
+
+        static void CreatedCallback(void* instance, bool registered, void* state) noexcept
         {
-            auto& impl = *static_cast<Impl*>(state);
+            auto& window = *static_cast<Window*>(state);
+            window.OnCreated(instance, registered);
+        }
 
-            assert(instance);
-            assert(!impl.nativeInstance);
-
-            impl.nativeInstance = instance;
-
-            try
-            {
-                impl.createdHandlers();
-            }
-            catch (...)
-            {
-                impl.application.Shutdown(-1, true);
-            }
-
-            (void)registered;
+        static bool ClosingCallback(void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            return window.OnClosing();
         }
 
         static void ClosedCallback(void* state) noexcept
         {
-            auto& impl = *static_cast<Impl*>(state);
-
-            impl.nativeInstance = nullptr;
-            impl.isClosed = true;
-
-            try
-            {
-                impl.closedHandlers();
-            }
-            catch (...)
-            {
-                impl.application.Shutdown(-1, true);
-            }
+            auto& window = *static_cast<Window*>(state);
+            window.OnClosed();
         }
     };
 
     Window::Window(Application& application, Window* parent)
-        : impl_(std::make_unique<Impl>(application, parent))
+        : impl_(std::make_unique<Impl>(*this, application, parent))
     {
     }
 
     Window::~Window()
     {
+        assert(!impl_->nativeInstance);
+        assert(impl_->isClosed || !impl_->application.IsRunning());
+
         if (impl_->nativeInstance)
-            Close();
+            std::terminate();
+    }
+
+    void Window::InternalClose()
+    {
+        if (!impl_->nativeInstance || impl_->isClosed)
+            return;
+
+        impl_->forceClose = true;
+        Close();
+    }
+
+    void Window::OnCreated(void* instance, bool registered) noexcept
+    {
+        assert(instance);
+        assert(!impl_->nativeInstance);
+
+        impl_->nativeInstance = instance;
+        impl_->application.OnWindowCreated(*this, registered);
+
+        try
+        {
+            impl_->createdHandlers();
+        }
+        catch (...)
+        {
+            impl_->application.Shutdown(-1, true);
+        }
+    }
+
+    bool Window::OnClosing() noexcept
+    {
+        if (impl_->forceClose)
+            return false;
+
+        try
+        {
+            ClosingEventArgs args;
+            impl_->closingHandlers(args);
+            return args.cancel;
+        }
+        catch (...)
+        {
+            impl_->application.Shutdown(-1, true);
+            return false;
+        }
+    }
+
+    void Window::OnClosed() noexcept
+    {
+        assert(impl_->nativeInstance);
+
+        impl_->nativeInstance = nullptr;
+        impl_->isClosed = true;
+        impl_->forceClose = false;
+
+        impl_->application.OnWindowClosed(*this);
+
+        try
+        {
+            impl_->closedHandlers();
+        }
+        catch (...)
+        {
+            impl_->application.Shutdown(-1, true);
+        }
     }
 
     bool Window::IsInitialized() const noexcept
@@ -162,13 +213,11 @@ namespace photinox
     Window& Window::SetTitle(std::string_view title)
     {
         if (impl_->isClosed)
-            throw std::logic_error(
-                "SetTitle cannot be called after the window has been closed.");
+            throw std::logic_error("SetTitle cannot be called after the window has been closed.");
 
         if (impl_->nativeInstance)
         {
-            throw std::logic_error(
-                "SetTitle can currently only be called before the window is initialized.");
+            throw std::logic_error("SetTitle can currently only be called before the window is initialized.");
         }
 
         impl_->title = title;
@@ -178,13 +227,11 @@ namespace photinox
     Window& Window::LoadString(std::string_view content)
     {
         if (impl_->isClosed)
-            throw std::logic_error(
-                "LoadString cannot be called after the window has been closed.");
+            throw std::logic_error("LoadString cannot be called after the window has been closed.");
 
         if (impl_->nativeInstance)
         {
-            throw std::logic_error(
-                "LoadString can currently only be called before the window is initialized.");
+            throw std::logic_error("LoadString can currently only be called before the window is initialized.");
         }
 
         impl_->startString = content;
@@ -197,8 +244,7 @@ namespace photinox
             throw std::invalid_argument("handler");
 
         if (impl_->isClosed)
-            throw std::logic_error(
-                "RegisterCreatingHandler cannot be called after the window has been closed.");
+            throw std::logic_error("RegisterCreatingHandler cannot be called after the window has been closed.");
 
         impl_->creatingHandlers.append(std::move(handler));
         return *this;
@@ -210,10 +256,21 @@ namespace photinox
             throw std::invalid_argument("handler");
 
         if (impl_->isClosed)
-            throw std::logic_error(
-                "RegisterCreatedHandler cannot be called after the window has been closed.");
+            throw std::logic_error("RegisterCreatedHandler cannot be called after the window has been closed.");
 
         impl_->createdHandlers.append(std::move(handler));
+        return *this;
+    }
+
+    Window& Window::RegisterClosingHandler(ClosingHandler handler)
+    {
+        if (!handler)
+            throw std::invalid_argument("handler");
+
+        if (impl_->isClosed)
+            throw std::logic_error("RegisterClosingHandler cannot be called after the window has been closed.");
+
+        impl_->closingHandlers.append(std::move(handler));
         return *this;
     }
 
@@ -223,8 +280,7 @@ namespace photinox
             throw std::invalid_argument("handler");
 
         if (impl_->isClosed)
-            throw std::logic_error(
-                "RegisterClosedHandler cannot be called after the window has been closed.");
+            throw std::logic_error("RegisterClosedHandler cannot be called after the window has been closed.");
 
         impl_->closedHandlers.append(std::move(handler));
         return *this;
@@ -234,8 +290,7 @@ namespace photinox
     {
         if (impl_->isClosed)
         {
-            throw std::logic_error(
-                "Show cannot be called after the window has been closed.");
+            throw std::logic_error("Show cannot be called after the window has been closed.");
         }
 
         if (impl_->nativeInstance)
@@ -270,8 +325,7 @@ namespace photinox
 
         if (impl_->startString.empty())
         {
-            throw std::invalid_argument(
-                "Initial browser content must be supplied with LoadString.");
+            throw std::invalid_argument("Initial browser content must be supplied with LoadString.");
         }
 
         auto params = impl_->CreateInitParams();
@@ -291,20 +345,17 @@ namespace photinox
     {
         if (impl_->isClosed)
         {
-            throw std::logic_error(
-                "Close cannot be called after the window has been closed.");
+            throw std::logic_error("Close cannot be called after the window has been closed.");
         }
 
         if (!impl_->nativeInstance)
         {
-            throw std::logic_error(
-                "Close cannot be called before the window is initialized.");
+            throw std::logic_error("Close cannot be called before the window is initialized.");
         }
 
         impl_->application.GetDispatcher().Invoke([this]
         {
-            impl_->application.NativeLibrary().WindowClose(
-                impl_->nativeInstance);
+            impl_->application.NativeLibrary().WindowClose(impl_->nativeInstance);
         });
     }
 }

@@ -9,6 +9,8 @@ int main()
     Application application;
     Window window(application);
 
+    application.SetShutdownMode(ShutdownMode::OnExplicitShutdown);
+
     window
         .SetTitle("PhotinoX.Cpp HelloWorld")
         .LoadString(
@@ -22,21 +24,32 @@ int main()
         {
             std::cout << "Creating window" << '\n';
         })
-        .RegisterCreatedHandler([]
+        .RegisterCreatedHandler([&application]
         {
-            std::cout << "Created window" << '\n';
+            std::cout << "Created window, count: " << application.Windows().size() << '\n';
         })
-        .RegisterClosedHandler([]
+        .RegisterClosingHandler([](ClosingEventArgs& args)
         {
-            std::cout << "Closed window" << '\n';
+            std::cout << "Closing window" << '\n';
+            args.cancel = false;
+        })
+        .RegisterClosedHandler([&application]
+        {
+            std::cout << "Closed window, count: " << application.Windows().size() << '\n';
+#ifndef NDEBUG
+            application.Shutdown(0, true);
+#endif
         });
 
     application
         .SetName("PhotinoX.Cpp HelloWorld")
         .SetNotificationsEnabled(false)
-        .RegisterStartupHandler([&window]
+        .RegisterStartupHandler([&application]
         {
-            window.Show();
+            std::cout << "Startup handler" << '\n';
+#ifdef NDEBUG
+            application.Shutdown(0, true);
+#endif
         })
         .RegisterExitHandler([](ExitEventArgs& args)
         {
@@ -46,5 +59,5 @@ int main()
                 << '\n';
         });
 
-    return application.Run();
+    return application.Run(&window);
 }

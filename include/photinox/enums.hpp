@@ -38,4 +38,11 @@ namespace photinox
         FullScreen
     };
     static_assert(sizeof(WindowState) == sizeof(int));
+
+    enum class ShutdownMode
+    {
+        OnLastWindowClose,
+        OnMainWindowClose,
+        OnExplicitShutdown
+    };
 }

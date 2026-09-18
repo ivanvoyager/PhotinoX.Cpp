@@ -32,13 +32,21 @@ namespace photinox
 
         Window& RegisterCreatingHandler(WindowHandler handler);
         Window& RegisterCreatedHandler(WindowHandler handler);
+        Window& RegisterClosingHandler(ClosingHandler handler);
         Window& RegisterClosedHandler(WindowHandler handler);
 
         void Show();
         void Close();
 
     private:
+        friend class Application;
+
         class Impl;
         std::unique_ptr<Impl> impl_;
+
+        void InternalClose();
+        void OnCreated(void* instance, bool registered) noexcept;
+        bool OnClosing() noexcept;
+        void OnClosed() noexcept;
     };
 }
