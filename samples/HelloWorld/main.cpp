@@ -73,14 +73,32 @@ int main()
 
             std::cout << "Notifications enabled: " << application.NotificationsEnabled() << '\n';
 
-        #ifdef NDEBUG
-            application.Shutdown(0, true);
-        #endif
+            const bool scheduled = application.GetDispatcher().BeginInvoke([]
+            {
+                throw std::runtime_error("Dispatcher test exception.");
+            });
+
+            assert(scheduled);
         })
         .RegisterExitHandler([](ExitEventArgs& args)
         {
             std::cout << "Exit handler: " << args.applicationExitCode  << '\n';
         });
+
+
+    const EventToken exceptionToken =
+        application.GetDispatcher().SubscribeUnhandledExceptionHandler(
+            [](std::exception_ptr exception)
+            {
+                try
+                {
+                    std::rethrow_exception(exception);
+                }
+                catch (const std::exception& ex)
+                {
+                    std::cout << "Unhandled dispatcher exception: " << ex.what() << '\n';
+                }
+            });
 
     return application.Run(&window);
 }

@@ -33,7 +33,7 @@ namespace photinox::native
         [[nodiscard]] bool ApplicationIsShuttingDown() const noexcept;
         [[nodiscard]] bool ApplicationCheckAccess() const noexcept;
         [[nodiscard]] bool ApplicationInvoke(InvokeStateCallback callback, void* state) const;
-        [[nodiscard]] bool ApplicationBeginInvoke(InvokeStateCallback callback, void* state) const;
+        [[nodiscard]] bool ApplicationBeginInvoke(InvokeStateCallback callback, ReleaseStateCallback release, void* state) const noexcept;
         //notifications
         [[nodiscard]] bool ApplicationGetNotificationsEnabled() const noexcept;
         void ApplicationSetNotificationsEnabled(bool enabled) const noexcept;
@@ -58,7 +58,7 @@ namespace photinox::native
         bool (*applicationIsShuttingDown_)() = nullptr;
         bool (*applicationCheckAccess_)() = nullptr;
         bool (*applicationInvoke_)(InvokeStateCallback, void*) = nullptr;
-        bool (*applicationBeginInvoke_)(InvokeStateCallback, void*) = nullptr;
+        bool (*applicationBeginInvoke_)(InvokeStateCallback, ReleaseStateCallback, void*) = nullptr;
         //notifications
         void (*applicationGetNotificationsEnabled_)(bool*) = nullptr;
         void (*applicationSetNotificationsEnabled_)(bool) = nullptr;

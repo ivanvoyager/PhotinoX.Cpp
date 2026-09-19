@@ -1,15 +1,43 @@
 #include <photinox/dispatcher.hpp>
+#include <eventpp/callbacklist.h>
 
 #include "native/library.hpp"
 
+#include <cassert>
+#include <cstdint>
 #include <exception>
 #include <mutex>
 #include <stdexcept>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 
 namespace photinox
 {
+    namespace
+    {
+        struct InvokeState final
+        {
+            DispatcherCallback callback;
+            std::exception_ptr exception;
+            const Dispatcher* dispatcher = nullptr;
+        };
+
+        template<typename TCallback>
+        void ValidateCallback(const TCallback& callback)
+        {
+            if (!callback)
+                throw std::invalid_argument("callback");
+        }
+
+        template<typename THandler>
+        void ValidateHandler(const THandler& handler)
+        {
+            if (!handler)
+                throw std::invalid_argument("handler");
+        }
+    } // namespace
+
     class Dispatcher::Impl final
     {
     public:
@@ -21,43 +49,16 @@ namespace photinox
         native::Library& library;
         std::mutex threadMutex;
         std::thread::id threadId;
+
+        using UnhandledExceptionHandlerList = eventpp::CallbackList<void(std::exception_ptr)>;
+
+        UnhandledExceptionHandlerList unhandledExceptionHandlers;
+
+        std::mutex eventSubscriptionsMutex;
+        std::uint64_t nextEventToken = 1;
+
+        std::unordered_map<std::uint64_t, UnhandledExceptionHandlerList::Handle> unhandledExceptionHandlerSubscriptions;
     };
-
-    namespace
-    {
-        struct InvokeState final
-        {
-            DispatcherCallback callback;
-            std::exception_ptr exception;
-        };
-
-        void InvokeCallback(void* state) noexcept
-        {
-            auto& invokeState = *static_cast<InvokeState*>(state);
-
-            try
-            {
-                invokeState.callback();
-            }
-            catch (...)
-            {
-                invokeState.exception = std::current_exception();
-            }
-        }
-
-        void BeginInvokeCallback(void* state) noexcept
-        {
-            std::unique_ptr<InvokeState> invokeState(static_cast<InvokeState*>(state));
-
-            try
-            {
-                invokeState->callback();
-            }
-            catch (...)
-            {
-            }
-        }
-    }
 
     Dispatcher::Dispatcher(native::Library& library)
         : impl_(std::make_unique<Impl>(library))
@@ -65,6 +66,25 @@ namespace photinox
     }
 
     Dispatcher::~Dispatcher() = default;
+
+    EventToken Dispatcher::NextEventToken()
+    {
+        if (impl_->nextEventToken == 0)
+            throw std::overflow_error("Dispatcher event token limit has been reached.");
+
+        return EventToken(impl_->nextEventToken++);
+    }
+
+    void Dispatcher::OnUnhandledException(std::exception_ptr exception) const noexcept
+    {
+        try
+        {
+            impl_->unhandledExceptionHandlers(std::move(exception));
+        }
+        catch (...)
+        {
+        }
+    }
 
     bool Dispatcher::CheckAccess() const
     {
@@ -107,10 +127,43 @@ namespace photinox
         throw std::runtime_error("Photino windows must be created on the dispatcher thread.");
     }
 
+    void Dispatcher::InvokeCallback(void* state) noexcept
+    {
+        auto* invokeState = static_cast<InvokeState*>(state);
+
+        try
+        {
+            invokeState->callback();
+        }
+        catch (...)
+        {
+            invokeState->exception = std::current_exception();
+        }
+    }
+
+    void Dispatcher::BeginInvokeCallback(void* state) noexcept
+    {
+        std::unique_ptr<InvokeState> invokeState(static_cast<InvokeState*>(state));
+
+        try
+        {
+            invokeState->callback();
+        }
+        catch (...)
+        {
+            if (invokeState->dispatcher)
+                invokeState->dispatcher->OnUnhandledException(std::current_exception());
+        }
+    }
+
+    void Dispatcher::ReleaseInvokeState(void* state) noexcept
+    {
+        delete static_cast<InvokeState*>(state);
+    }
+
     void Dispatcher::Invoke(DispatcherCallback callback) const
     {
-        if (!callback)
-            throw std::invalid_argument("callback");
+        ValidateCallback(callback);
 
         if (CheckAccess())
         {
@@ -132,8 +185,7 @@ namespace photinox
 
     bool Dispatcher::TryInvoke(DispatcherCallback callback) const
     {
-        if (!callback)
-            throw std::invalid_argument("callback");
+        ValidateCallback(callback);
 
         if (CheckAccess())
         {
@@ -157,16 +209,67 @@ namespace photinox
 
     bool Dispatcher::BeginInvoke(DispatcherCallback callback) const
     {
-        if (!callback)
-            throw std::invalid_argument("callback");
+        ValidateCallback(callback);
 
         auto state = std::make_unique<InvokeState>();
         state->callback = std::move(callback);
+        state->dispatcher = this;
 
-        if (!impl_->library.ApplicationBeginInvoke(BeginInvokeCallback, state.get()))
+        if (!impl_->library.ApplicationBeginInvoke(BeginInvokeCallback, ReleaseInvokeState, state.get()))
             return false;
 
         state.release();
         return true;
+    }
+
+    Dispatcher& Dispatcher::RegisterUnhandledExceptionHandler(UnhandledExceptionHandler handler)
+    {
+        ValidateHandler(handler);
+
+        impl_->unhandledExceptionHandlers.append(std::move(handler));
+        return *this;
+    }
+
+    EventToken Dispatcher::SubscribeUnhandledExceptionHandler(UnhandledExceptionHandler handler)
+    {
+        ValidateHandler(handler);
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        const EventToken token = NextEventToken();
+        auto handle = impl_->unhandledExceptionHandlers.append(std::move(handler));
+
+        try
+        {
+            impl_->unhandledExceptionHandlerSubscriptions.emplace(token.value_, handle);
+        }
+        catch (...)
+        {
+            const bool removed = impl_->unhandledExceptionHandlers.remove(handle);
+            assert(removed);
+            throw;
+        }
+
+        return token;
+    }
+
+    bool Dispatcher::UnsubscribeUnhandledExceptionHandler(EventToken token)
+    {
+        if (!token)
+            return false;
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        auto& subscriptions = impl_->unhandledExceptionHandlerSubscriptions;
+        const auto iterator = subscriptions.find(token.value_);
+
+        if (iterator == subscriptions.end())
+            return false;
+
+        const bool removed = impl_->unhandledExceptionHandlers.remove(iterator->second);
+        assert(removed);
+
+        subscriptions.erase(iterator);
+        return removed;
     }
 }

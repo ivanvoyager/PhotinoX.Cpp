@@ -4,6 +4,8 @@
 
 namespace photinox
 {
+    class Dispatcher;
+
     class EventToken final
     {
     public:
@@ -18,6 +20,7 @@ namespace photinox
 
     private:
         friend class Application;
+        friend class Dispatcher;
 
         constexpr explicit EventToken(std::uint64_t value) noexcept
             : value_(value)

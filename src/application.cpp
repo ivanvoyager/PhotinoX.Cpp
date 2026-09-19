@@ -39,7 +39,7 @@ namespace photinox
             if (!handler)
                 throw std::invalid_argument("handler");
         }
-    }
+    } // namespace
 
     class Application::Impl final
     {

@@ -61,11 +61,6 @@ Enter-VsDevShell `
     -SkipAutomaticLocation `
     -DevCmdArguments "-arch=x64 -host_arch=x64"
 
-$BuildDirectory = $Preset -replace "-local$", ""
-$ExecutablePath = Join-Path `
-    $RootDirectory `
-    "build/$BuildDirectory/samples/HelloWorld/PhotinoX.Cpp.HelloWorld.exe"
-
 Push-Location $RootDirectory
 
 try {
@@ -79,12 +74,6 @@ try {
 
     if ($LASTEXITCODE -ne 0) {
         throw "CMake build failed with exit code $LASTEXITCODE."
-    }
-
-    & $ExecutablePath
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "HelloWorld failed with exit code $LASTEXITCODE."
     }
 }
 finally {

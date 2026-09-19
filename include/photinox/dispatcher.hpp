@@ -1,6 +1,7 @@
 #pragma once
 
 #include <photinox/callbacks.hpp>
+#include <photinox/event_token.hpp>
 
 #include <concepts>
 #include <functional>
@@ -90,6 +91,10 @@ namespace photinox
         }
         [[nodiscard]] bool BeginInvoke(DispatcherCallback callback) const;
 
+        Dispatcher& RegisterUnhandledExceptionHandler(UnhandledExceptionHandler handler);
+        [[nodiscard]] EventToken SubscribeUnhandledExceptionHandler(UnhandledExceptionHandler handler);
+        bool UnsubscribeUnhandledExceptionHandler(EventToken token);
+
     private:
         friend class Application;
         friend class Window;
@@ -97,8 +102,15 @@ namespace photinox
         class Impl;
         std::unique_ptr<Impl> impl_;
 
-        void VerifyAccessToCreateWindow();
-
         explicit Dispatcher(native::Library& library);
+
+        [[nodiscard]] EventToken NextEventToken();
+        void OnUnhandledException(std::exception_ptr exception) const noexcept;
+
+        static void InvokeCallback(void* state) noexcept;
+        static void BeginInvokeCallback(void* state) noexcept;
+        static void ReleaseInvokeState(void* state) noexcept;
+
+        void VerifyAccessToCreateWindow();
     };
 }

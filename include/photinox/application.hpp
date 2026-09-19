@@ -2,7 +2,7 @@
 
 #include <photinox/callbacks.hpp>
 #include <photinox/dispatcher.hpp>
-#include "event_token.hpp"
+#include <photinox/event_token.hpp>
 
 #include <memory>
 #include <span>

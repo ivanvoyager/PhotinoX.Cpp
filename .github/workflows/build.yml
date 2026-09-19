@@ -38,21 +38,6 @@ jobs:
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }}
 
-      - name: Run HelloWorld
-        shell: pwsh
-        run: |
-          $executable = ".\build\${{ matrix.preset }}\samples\HelloWorld\PhotinoX.Cpp.HelloWorld.exe"
-
-          if (-not (Test-Path $executable)) {
-            throw "Executable not found: $executable"
-          }
-
-          & $executable
-
-          if ($LASTEXITCODE -ne 0) {
-            throw "HelloWorld failed with exit code $LASTEXITCODE."
-          }
-
   build-linux:
     name: Linux ${{ matrix.arch }} ${{ matrix.preset }}
     runs-on: ${{ matrix.runner }}
@@ -89,17 +74,6 @@ jobs:
       - name: Build
         run: cmake --build --preset "${{ matrix.preset }}"
 
-      - name: Run HelloWorld
-        run: |
-          executable="./build/${{ matrix.preset }}/samples/HelloWorld/PhotinoX.Cpp.HelloWorld"
-
-          if [ ! -x "$executable" ]; then
-            echo "Executable not found: $executable"
-            exit 1
-          fi
-
-          "$executable"
-
   build-macos:
     name: macOS ${{ matrix.arch }} ${{ matrix.preset }}
     runs-on: ${{ matrix.runner }}
@@ -127,14 +101,3 @@ jobs:
 
       - name: Build
         run: cmake --build --preset "${{ matrix.preset }}"
-
-      - name: Run HelloWorld
-        run: |
-          executable="./build/${{ matrix.preset }}/samples/HelloWorld/PhotinoX.Cpp.HelloWorld"
-
-          if [ ! -x "$executable" ]; then
-            echo "Executable not found: $executable"
-            exit 1
-          fi
-
-          "$executable"

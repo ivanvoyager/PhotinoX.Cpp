@@ -137,9 +137,9 @@ namespace photinox::native
         return applicationInvoke_(callback, state);
     }
 
-    bool Library::ApplicationBeginInvoke(InvokeStateCallback callback, void* state) const
+    bool Library::ApplicationBeginInvoke(InvokeStateCallback callback, ReleaseStateCallback release, void* state) const noexcept
     {
-        return applicationBeginInvoke_(callback, state);
+        return applicationBeginInvoke_(callback, release, state);
     }
 
     bool Library::ApplicationGetNotificationsEnabled() const noexcept

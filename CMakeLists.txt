@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
     PhotinoX.Cpp
-    VERSION 5.2.1
+    VERSION 5.2.2
     LANGUAGES CXX
 )
 
@@ -13,7 +13,7 @@ include(FetchContent)
 FetchContent_Declare(
     eventpp
     GIT_REPOSITORY https://github.com/wqking/eventpp.git
-    GIT_TAG master
+    GIT_TAG 1224dd6c9bd4577d686ac42334fc545997f5ece1
 )
 
 FetchContent_MakeAvailable(eventpp)
@@ -41,10 +41,7 @@ target_sources(
             include/photinox/dispatcher.hpp
             include/photinox/enums.hpp
             include/photinox/event_args.hpp
-            include/photinox/error.hpp
             include/photinox/photinox.hpp
-            include/photinox/result.hpp
-            include/photinox/version.hpp
             include/photinox/window.hpp
 )
 

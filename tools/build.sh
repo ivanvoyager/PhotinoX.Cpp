@@ -50,12 +50,7 @@ case "$preset" in
         ;;
 esac
 
-build_directory="${preset%-local}"
-executable_path="$root_directory/build/$build_directory/samples/HelloWorld/PhotinoX.Cpp.HelloWorld"
-
 cd "$root_directory"
 
 cmake --preset "$preset"
 cmake --build --preset "$preset"
-
-"$executable_path"
