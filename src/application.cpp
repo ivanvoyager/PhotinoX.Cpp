@@ -270,12 +270,10 @@ namespace photinox
         if (!IsRunning())
             return impl_->notificationsEnabled.load(std::memory_order_acquire);
 
-        bool enabled = false;
-        GetDispatcher().Invoke([this, &enabled]
+        return GetDispatcher().Invoke([this]
         {
-            enabled = impl_->library.ApplicationGetNotificationsEnabled();
+            return impl_->library.ApplicationGetNotificationsEnabled();
         });
-        return enabled;
     }
 
     Application& Application::SetNotificationsEnabled(bool enabled)

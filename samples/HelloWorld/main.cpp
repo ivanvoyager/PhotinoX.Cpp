@@ -34,14 +34,6 @@ int main()
             assert(removed);
         });
 
-    const EventToken noExitToken = application.SubscribeExitHandler([](ExitEventArgs&)
-        {
-            std::cout << "This handler must not run\n";
-        });
-
-    assert(application.UnsubscribeExitHandler(noExitToken));
-    assert(!application.UnsubscribeExitHandler(noExitToken));
-
     window
         .SetTitle("PhotinoX.Cpp HelloWorld")
         .LoadString(
