@@ -1,6 +1,6 @@
 #include <photinox/dispatcher.hpp>
 #include <eventpp/callbacklist.h>
-
+#include "event_token.internal.hpp"
 #include "native/library.hpp"
 
 #include <cassert>
@@ -55,6 +55,7 @@ namespace photinox
         UnhandledExceptionHandlerList unhandledExceptionHandlers;
 
         std::mutex eventSubscriptionsMutex;
+        const std::uint64_t eventOwnerId = NextEventOwnerId();
         std::uint64_t nextEventToken = 1;
 
         std::unordered_map<std::uint64_t, UnhandledExceptionHandlerList::Handle> unhandledExceptionHandlerSubscriptions;
@@ -72,7 +73,7 @@ namespace photinox
         if (impl_->nextEventToken == 0)
             throw std::overflow_error("Dispatcher event token limit has been reached.");
 
-        return EventToken(impl_->nextEventToken++);
+        return EventToken(impl_->eventOwnerId, impl_->nextEventToken++);
     }
 
     void Dispatcher::OnUnhandledException(std::exception_ptr exception) const noexcept
@@ -255,7 +256,7 @@ namespace photinox
 
     bool Dispatcher::UnsubscribeUnhandledExceptionHandler(EventToken token)
     {
-        if (!token)
+        if (!token || token.ownerId_ != impl_->eventOwnerId)
             return false;
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);

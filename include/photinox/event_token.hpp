@@ -4,6 +4,7 @@
 
 namespace photinox
 {
+    class Application;
     class Dispatcher;
 
     class EventToken final
@@ -13,7 +14,7 @@ namespace photinox
 
         [[nodiscard]] constexpr explicit operator bool() const noexcept
         {
-            return value_ != 0;
+            return ownerId_ != 0 && value_ != 0;
         }
 
         friend constexpr bool operator==(EventToken, EventToken) noexcept = default;
@@ -22,11 +23,13 @@ namespace photinox
         friend class Application;
         friend class Dispatcher;
 
-        constexpr explicit EventToken(std::uint64_t value) noexcept
-            : value_(value)
+        constexpr EventToken(std::uint64_t ownerId, std::uint64_t value) noexcept
+            : ownerId_(ownerId),
+            value_(value)
         {
         }
 
+        std::uint64_t ownerId_ = 0;
         std::uint64_t value_ = 0;
     };
 }

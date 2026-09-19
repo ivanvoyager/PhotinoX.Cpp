@@ -32,6 +32,7 @@ target_sources(
         src/dispatcher.cpp
         src/application.cpp
         src/window.cpp
+        src/event_token.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
