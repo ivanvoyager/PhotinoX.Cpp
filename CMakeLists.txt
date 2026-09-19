@@ -32,6 +32,7 @@ target_sources(
         src/dispatcher.cpp
         src/application.cpp
         src/window.cpp
+        src/event_token.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -41,6 +42,7 @@ target_sources(
             include/photinox/dispatcher.hpp
             include/photinox/enums.hpp
             include/photinox/event_args.hpp
+            include/photinox/event_token.hpp
             include/photinox/photinox.hpp
             include/photinox/window.hpp
 )

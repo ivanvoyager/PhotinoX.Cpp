@@ -1,6 +1,6 @@
 #include <photinox/application.hpp>
 #include <photinox/window.hpp>
-
+#include "event_token.internal.hpp"
 #include "native/library.hpp"
 #include <eventpp/callbacklist.h>
 
@@ -65,6 +65,7 @@ namespace photinox
         ExitHandlerList exitHandlers;
 
         std::mutex eventSubscriptionsMutex;
+        const std::uint64_t eventOwnerId = NextEventOwnerId();
         std::uint64_t nextEventToken = 1;
 
         std::unordered_map<std::uint64_t, StartupHandlerList::Handle> startupHandlerSubscriptions;
@@ -236,7 +237,7 @@ namespace photinox
         if (impl_->nextEventToken == 0)
             throw std::overflow_error("Application event token limit has been reached.");
 
-        return EventToken(impl_->nextEventToken++);
+        return EventToken(impl_->eventOwnerId, impl_->nextEventToken++);
     }
 
     std::string_view Application::Name() const noexcept
@@ -442,7 +443,7 @@ namespace photinox
 
     bool Application::UnsubscribeStartupHandler(EventToken token)
     {
-        if (!token)
+        if (!token || token.ownerId_ != impl_->eventOwnerId)
             return false;
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
@@ -493,7 +494,7 @@ namespace photinox
 
     bool Application::UnsubscribeShutdownRequestedHandler(EventToken token)
     {
-        if (!token)
+        if (!token || token.ownerId_ != impl_->eventOwnerId)
             return false;
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
@@ -544,7 +545,7 @@ namespace photinox
 
     bool Application::UnsubscribeExitHandler(EventToken token)
     {
-        if (!token)
+        if (!token || token.ownerId_ != impl_->eventOwnerId)
             return false;
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
