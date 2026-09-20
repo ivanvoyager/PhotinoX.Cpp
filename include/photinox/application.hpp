@@ -3,11 +3,11 @@
 #include <photinox/callbacks.hpp>
 #include <photinox/dispatcher.hpp>
 #include <photinox/event_token.hpp>
+#include <photinox/window_collection.hpp>
 
 #include <any>
 #include <exception>
 #include <memory>
-#include <span>
 #include <string_view>
 
 namespace photinox::native
@@ -55,7 +55,8 @@ namespace photinox
         [[nodiscard]] const Dispatcher& GetDispatcher() const noexcept;
 
         [[nodiscard]] Window* MainWindow() const noexcept;
-        [[nodiscard]] std::span<Window* const> Windows() const noexcept;
+        [[nodiscard]] WindowCollection& Windows() noexcept;
+        [[nodiscard]] const WindowCollection& Windows() const noexcept;
 
         [[nodiscard]] int Run(Window* mainWindow = nullptr);
 
@@ -97,13 +98,13 @@ namespace photinox
 
     private:
         friend class Window;
+        friend class WindowCollection;
 
         class Impl;
         std::unique_ptr<Impl> impl_;
 
         [[nodiscard]] native::Library& NativeLibrary() noexcept;
         void ThrowIfRunning(std::string_view memberName) const;
-        [[nodiscard]] EventToken NextEventToken();
 
         void CloseWindows();
         void OnWindowCreated(Window& window, bool registered);

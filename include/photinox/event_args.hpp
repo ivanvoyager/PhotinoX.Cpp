@@ -3,10 +3,13 @@
 #include <photinox/enums.hpp>
 
 #include <any>
+#include <span>
 #include <string>
 
 namespace photinox
 {
+    class Window;
+
     struct ShutdownRequestedEventArgs
     {
         ShutdownRequestReason reason;
@@ -49,6 +52,13 @@ namespace photinox
     {
         int notificationId;
         std::any state;
+    };
+
+    struct WindowCollectionChangedEventArgs
+    {
+        NotifyCollectionChangedAction action;
+        std::span<Window* const> newItems;
+        std::span<Window* const> oldItems;
     };
 
     struct ClosingEventArgs

@@ -1,7 +1,10 @@
 #include <photinox/dispatcher.hpp>
-#include <eventpp/callbacklist.h>
-#include "event_token.internal.hpp"
+
 #include "native/library.hpp"
+
+#include "event_token.internal.hpp"
+
+#include <eventpp/callbacklist.h>
 
 #include <cassert>
 #include <cstdint>
@@ -59,6 +62,14 @@ namespace photinox
         std::uint64_t nextEventToken = 1;
 
         std::unordered_map<std::uint64_t, UnhandledExceptionHandlerList::Handle> unhandledExceptionHandlerSubscriptions;
+
+        [[nodiscard]] EventToken NextEventToken()
+        {
+            if (nextEventToken == 0)
+                throw std::overflow_error("Dispatcher event token limit has been reached.");
+
+            return EventToken(eventOwnerId, nextEventToken++);
+        }
     };
 
     Dispatcher::Dispatcher(native::Library& library)
@@ -67,14 +78,6 @@ namespace photinox
     }
 
     Dispatcher::~Dispatcher() = default;
-
-    EventToken Dispatcher::NextEventToken()
-    {
-        if (impl_->nextEventToken == 0)
-            throw std::overflow_error("Dispatcher event token limit has been reached.");
-
-        return EventToken(impl_->eventOwnerId, impl_->nextEventToken++);
-    }
 
     void Dispatcher::OnUnhandledException(std::exception_ptr exception) const noexcept
     {
@@ -226,7 +229,6 @@ namespace photinox
     Dispatcher& Dispatcher::RegisterUnhandledExceptionHandler(UnhandledExceptionHandler handler)
     {
         ValidateHandler(handler);
-
         impl_->unhandledExceptionHandlers.append(std::move(handler));
         return *this;
     }
@@ -237,7 +239,7 @@ namespace photinox
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
 
-        const EventToken token = NextEventToken();
+        const EventToken token = impl_->NextEventToken();
         auto handle = impl_->unhandledExceptionHandlers.append(std::move(handler));
 
         try

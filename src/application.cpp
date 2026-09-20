@@ -1,7 +1,10 @@
 #include <photinox/application.hpp>
+
 #include <photinox/window.hpp>
-#include "event_token.internal.hpp"
 #include "native/library.hpp"
+
+#include "event_token.internal.hpp"
+
 #include <eventpp/callbacklist.h>
 
 #include <algorithm>
@@ -49,12 +52,12 @@ namespace photinox
     public:
         native::Library library;
         std::unique_ptr<Dispatcher> dispatcher;
+        std::unique_ptr<WindowCollection> windows;
 
         std::string name = "PhotinoX";
         std::string iconPath;
         std::string notificationRegistrationId = "PhotinoX";
 
-        std::vector<Window*> windows;
         Window* mainWindow = nullptr;
 
         ShutdownMode shutdownMode = ShutdownMode::OnLastWindowClose;
@@ -105,6 +108,14 @@ namespace photinox
 
         std::unordered_map<int, std::unique_ptr<NotificationState>> notificationStates;
         int nextNotificationId = 0;
+
+        [[nodiscard]] EventToken NextEventToken()
+        {
+            if (nextEventToken == 0)
+                throw std::overflow_error("Application event token limit has been reached.");
+
+            return EventToken(eventOwnerId, nextEventToken++);
+        }
 
         void SetCallbackException(std::exception_ptr exception) noexcept
         {
@@ -255,30 +266,40 @@ namespace photinox
                 switch (action)
                 {
                     case NotifyCollectionChangedAction::Add:
+                    {
+                        std::vector<Window*> windows;
+                        windows.reserve(static_cast<std::size_t>(newItemsCount));
+
                         for (int i = 0; i < newItemsCount; ++i)
                         {
                             auto* window = static_cast<Window*>(newItems[i]);
                             assert(window);
 
                             if (window)
-                                impl.windows.push_back(window);
+                                windows.push_back(window);
                         }
+
+                        impl.windows->Add(windows);
                         break;
+                    }
 
                     case NotifyCollectionChangedAction::Remove:
+                    {
+                        std::vector<Window*> windows;
+                        windows.reserve(static_cast<std::size_t>(oldItemsCount));
+
                         for (int i = 0; i < oldItemsCount; ++i)
                         {
                             auto* window = static_cast<Window*>(oldItems[i]);
                             assert(window);
 
-                            const auto iterator = std::find(impl.windows.begin(), impl.windows.end(), window);
-
-                            assert(iterator != impl.windows.end());
-
-                            if (iterator != impl.windows.end())
-                                impl.windows.erase(iterator);
+                            if (window)
+                                windows.push_back(window);
                         }
+
+                        impl.windows->Remove(windows);
                         break;
+                    }
 
                     default:
                         assert(false);
@@ -412,6 +433,7 @@ namespace photinox
         {
             impl_ = std::make_unique<Impl>();
             impl_->dispatcher.reset(new Dispatcher(impl_->library));
+            impl_->windows.reset(new WindowCollection(*this));
         }
         catch (...)
         {
@@ -440,14 +462,6 @@ namespace photinox
     {
         if (IsRunning())
             throw std::logic_error(std::string(memberName) + " cannot be used after the application has started.");
-    }
-
-    EventToken Application::NextEventToken()
-    {
-        if (impl_->nextEventToken == 0)
-            throw std::overflow_error("Application event token limit has been reached.");
-
-        return EventToken(impl_->eventOwnerId, impl_->nextEventToken++);
     }
 
     std::string_view Application::Name() const noexcept
@@ -537,9 +551,14 @@ namespace photinox
         return impl_->mainWindow;
     }
 
-    std::span<Window* const> Application::Windows() const noexcept
+    WindowCollection& Application::Windows() noexcept
     {
-        return impl_->windows;
+        return *impl_->windows;
+    }
+
+    const WindowCollection& Application::Windows() const noexcept
+    {
+        return *impl_->windows;
     }
 
     std::string_view Application::NativeVersion() const noexcept
@@ -586,7 +605,7 @@ namespace photinox
 
             impl_->ClearNotificationStates();
 
-            assert(impl_->windows.empty());
+            assert(impl_->windows->Empty());
 
             if (impl_->callbackException)
                 std::rethrow_exception(impl_->callbackException);
@@ -612,7 +631,7 @@ namespace photinox
 
     void Application::CloseWindows()
     {
-        const auto windows = impl_->windows;
+        const auto windows = impl_->windows->Snapshot();
 
         for (auto iterator = windows.rbegin(); iterator != windows.rend(); ++iterator)
         {
@@ -629,18 +648,20 @@ namespace photinox
 
         if (registered)
         {
-            assert(std::find(impl_->windows.begin(), impl_->windows.end(), &window) != impl_->windows.end());
+            assert(impl_->windows->Contains(window));
             return;
         }
 
-        assert(std::find(impl_->windows.begin(), impl_->windows.end(), &window) == impl_->windows.end());
-        impl_->windows.push_back(&window);
+        assert(!impl_->windows->Contains(window));
+
+        Window* item = &window;
+        impl_->windows->Add(std::span<Window* const>(&item, 1));
     }
 
     void Application::OnWindowClosed(Window& window)
     {
         assert(GetDispatcher().CheckAccess());
-        assert(std::find(impl_->windows.begin(), impl_->windows.end(), &window) == impl_->windows.end());
+        assert(!impl_->windows->Contains(window));
 
         const bool isMainWindow = impl_->mainWindow == &window;
 
@@ -656,7 +677,7 @@ namespace photinox
             return;
         }
 
-        if (impl_->shutdownMode == ShutdownMode::OnLastWindowClose && impl_->windows.empty())
+        if (impl_->shutdownMode == ShutdownMode::OnLastWindowClose && impl_->windows->Empty())
             Shutdown(0, true);
     }
 
@@ -731,7 +752,6 @@ namespace photinox
     Application& Application::RegisterStartupHandler(StartupHandler handler)
     {
         ValidateHandler(handler);
-
         impl_->startupHandlers.append(std::move(handler));
         return *this;
     }
@@ -742,7 +762,7 @@ namespace photinox
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
 
-        const EventToken token = NextEventToken();
+        const EventToken token = impl_->NextEventToken();
         auto handle = impl_->startupHandlers.append(std::move(handler));
 
         try
@@ -782,7 +802,6 @@ namespace photinox
     Application& Application::RegisterShutdownRequestedHandler(ShutdownRequestedHandler handler)
     {
         ValidateHandler(handler);
-
         impl_->shutdownRequestedHandlers.append(std::move(handler));
         return *this;
     }
@@ -793,7 +812,7 @@ namespace photinox
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
 
-        const EventToken token = NextEventToken();
+        const EventToken token = impl_->NextEventToken();
         auto handle = impl_->shutdownRequestedHandlers.append(std::move(handler));
 
         try
@@ -833,7 +852,6 @@ namespace photinox
     Application& Application::RegisterExitHandler(ExitHandler handler)
     {
         ValidateHandler(handler);
-
         impl_->exitHandlers.append(std::move(handler));
         return *this;
     }
@@ -844,7 +862,7 @@ namespace photinox
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
 
-        const EventToken token = NextEventToken();
+        const EventToken token = impl_->NextEventToken();
         auto handle = impl_->exitHandlers.append(std::move(handler));
 
         try
@@ -894,7 +912,7 @@ namespace photinox
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
 
-        const EventToken token = NextEventToken();
+        const EventToken token = impl_->NextEventToken();
         auto handle = impl_->notificationActivatedHandlers.append(std::move(handler));
 
         try
@@ -944,7 +962,7 @@ namespace photinox
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
 
-        const EventToken token = NextEventToken();
+        const EventToken token = impl_->NextEventToken();
         auto handle = impl_->notificationActionActivatedHandlers.append(std::move(handler));
 
         try
@@ -994,7 +1012,7 @@ namespace photinox
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
 
-        const EventToken token = NextEventToken();
+        const EventToken token = impl_->NextEventToken();
         auto handle = impl_->notificationInputActivatedHandlers.append(std::move(handler));
 
         try
@@ -1044,7 +1062,7 @@ namespace photinox
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
 
-        const EventToken token = NextEventToken();
+        const EventToken token = impl_->NextEventToken();
         auto handle = impl_->notificationDismissedHandlers.append(std::move(handler));
 
         try
@@ -1094,7 +1112,7 @@ namespace photinox
 
         std::lock_guard lock(impl_->eventSubscriptionsMutex);
 
-        const EventToken token = NextEventToken();
+        const EventToken token = impl_->NextEventToken();
         auto handle = impl_->notificationFailedHandlers.append(std::move(handler));
 
         try

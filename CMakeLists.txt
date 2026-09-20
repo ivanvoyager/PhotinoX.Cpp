@@ -30,10 +30,11 @@ target_sources(
         src/native/application.hpp
         src/native/notification.hpp
         src/native/window.hpp
-        src/dispatcher.cpp
         src/application.cpp
-        src/window.cpp
+        src/dispatcher.cpp
         src/event_token.cpp
+        src/window.cpp
+        src/window_collection.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -46,6 +47,7 @@ target_sources(
             include/photinox/event_token.hpp
             include/photinox/photinox.hpp
             include/photinox/window.hpp
+            include/photinox/window_collection.hpp
 )
 
 target_include_directories(

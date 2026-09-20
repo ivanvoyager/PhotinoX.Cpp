@@ -104,7 +104,6 @@ namespace photinox
 
         explicit Dispatcher(native::Library& library);
 
-        [[nodiscard]] EventToken NextEventToken();
         void OnUnhandledException(std::exception_ptr exception) const noexcept;
 
         static void InvokeCallback(void* state) noexcept;

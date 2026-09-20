@@ -12,13 +12,6 @@ int main()
 
     application.SetShutdownMode(ShutdownMode::OnMainWindowClose);
 
-    const EventToken token = application.SubscribeStartupHandler([]
-    {
-    });
-
-    assert(!application.UnsubscribeExitHandler(token));
-    assert(application.UnsubscribeStartupHandler(token));
-
     const EventToken startupToken = application.SubscribeStartupHandler([]
     {
         std::cout << "Subscribed startup handler\n";
@@ -47,9 +40,17 @@ int main()
         {
             std::cout << "Creating window" << '\n';
         })
-        .RegisterCreatedHandler([&application]
+        .RegisterCreatedHandler([&application, &window]
         {
-            std::cout << "Created window, count: " << application.Windows().size() << '\n';
+            std::cout << "Created window, count: " << application.Windows().Size() << '\n';
+
+            const auto windows = application.Windows().Snapshot();
+
+            assert(windows.size() == 1);
+            assert(windows.front() == &window);
+            assert(application.Windows().Contains(window));
+            assert(application.Windows().Size() == 1);
+            assert(!application.Windows().Empty());
         })
         .RegisterClosingHandler([](ClosingEventArgs& args)
         {
@@ -58,7 +59,9 @@ int main()
         })
         .RegisterClosedHandler([&application]
         {
-            std::cout << "Closed window, count: " << application.Windows().size() << '\n';
+            std::cout << "Closed window, count: " << application.Windows().Size() << '\n';
+
+            assert(application.Windows().Empty());
         });
 
     application
@@ -72,13 +75,6 @@ int main()
             application.SetNotificationsEnabled(true);
 
             std::cout << "Notifications enabled: " << application.NotificationsEnabled() << '\n';
-
-            const bool scheduled = application.GetDispatcher().BeginInvoke([]
-            {
-                throw std::runtime_error("Dispatcher test exception.");
-            });
-
-            assert(scheduled);
         })
         .RegisterExitHandler([](ExitEventArgs& args)
         {
@@ -141,6 +137,44 @@ int main()
 
         std::cout << "ShowNotification result: " << notificationId << '\n';
     });
+
+    application.Windows().RegisterChangedHandler(
+    [](const WindowCollectionChangedEventArgs& args)
+    {
+        if (args.action == NotifyCollectionChangedAction::Add)
+            std::cout << "Windows added: " << args.newItems.size() << '\n';
+
+        if (args.action == NotifyCollectionChangedAction::Remove)
+            std::cout << "Windows removed: " << args.oldItems.size() << '\n';
+    });
+
+    const EventToken token = application.Windows().SubscribeChangedHandler(
+    [](const WindowCollectionChangedEventArgs& args)
+    {
+        std::abort();
+    });
+
+    assert(application.Windows().UnsubscribeChangedHandler(token));
+    assert(!application.Windows().UnsubscribeChangedHandler(token));
+
+    application.GetDispatcher().RegisterUnhandledExceptionHandler(
+    [](std::exception_ptr exception)
+    {
+        try
+        {
+            std::rethrow_exception(exception);
+        }
+        catch (const std::runtime_error& error)
+        {
+            assert(std::string_view(error.what()) == "Collection handler failure.");
+        }
+    });
+
+    application.Windows().RegisterChangedHandler(
+        [](const WindowCollectionChangedEventArgs&)
+        {
+            throw std::runtime_error("Collection handler failure.");
+        });
 
     return application.Run(&window);
 }

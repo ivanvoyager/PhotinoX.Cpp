@@ -18,6 +18,8 @@ namespace photinox
     using ShutdownRequestedHandler = std::function<void(ShutdownRequestedEventArgs& args)>;
     using ExitHandler = std::function<void(ExitEventArgs& args)>;
 
+    using WindowCollectionChangedHandler = std::function<void(const WindowCollectionChangedEventArgs& args)>;
+
     //notifications
     using NotificationActivatedHandler = std::function<void(const NotificationActivatedEventArgs& args)>;
     using NotificationActionActivatedHandler = std::function<void(const NotificationActionActivatedEventArgs& args)>;
