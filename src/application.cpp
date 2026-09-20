@@ -21,6 +21,8 @@ namespace photinox
 {
     namespace
     {
+        std::atomic_bool g_applicationCreated = false;
+
         bool IsValidShutdownMode(ShutdownMode shutdownMode) noexcept
         {
             switch (shutdownMode)
@@ -402,12 +404,32 @@ namespace photinox
     };
 
     Application::Application()
-        : impl_(std::make_unique<Impl>())
     {
-        impl_->dispatcher.reset(new Dispatcher(impl_->library));
+        if (g_applicationCreated.exchange(true, std::memory_order_acq_rel))
+            throw std::logic_error("Only one Application instance can be created.");
+
+        try
+        {
+            impl_ = std::make_unique<Impl>();
+            impl_->dispatcher.reset(new Dispatcher(impl_->library));
+        }
+        catch (...)
+        {
+            g_applicationCreated.store(false, std::memory_order_release);
+            throw;
+        }
     }
 
-    Application::~Application() = default;
+    Application::~Application()
+    {
+        assert(!IsRunning());
+
+        if (IsRunning())
+            std::terminate();
+
+        impl_.reset();
+        g_applicationCreated.store(false, std::memory_order_release);
+    }
 
     native::Library& Application::NativeLibrary() noexcept
     {
