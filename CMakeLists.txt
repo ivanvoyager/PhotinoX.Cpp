@@ -28,6 +28,7 @@ target_sources(
         src/native/library.cpp
         src/native/library.hpp
         src/native/application.hpp
+        src/native/notification.hpp
         src/native/window.hpp
         src/dispatcher.cpp
         src/application.cpp

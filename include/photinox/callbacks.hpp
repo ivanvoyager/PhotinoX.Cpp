@@ -7,6 +7,7 @@
 
 namespace photinox
 {
+    //application
     using InvokeStateCallback = void (*)(void* state);
     using ReleaseStateCallback = void (*)(void* state);
 
@@ -17,6 +18,14 @@ namespace photinox
     using ShutdownRequestedHandler = std::function<void(ShutdownRequestedEventArgs& args)>;
     using ExitHandler = std::function<void(ExitEventArgs& args)>;
 
+    //notifications
+    using NotificationActivatedHandler = std::function<void(const NotificationActivatedEventArgs& args)>;
+    using NotificationActionActivatedHandler = std::function<void(const NotificationActionActivatedEventArgs& args)>;
+    using NotificationInputActivatedHandler = std::function<void(const NotificationInputActivatedEventArgs& args)>;
+    using NotificationDismissedHandler = std::function<void(const NotificationDismissedEventArgs& args)>;
+    using NotificationFailedHandler = std::function<void(const NotificationFailedEventArgs& args)>;
+
+    //window
     using WindowHandler = std::function<void()>;
     using ClosingHandler = std::function<void(ClosingEventArgs& args)>;
 }

@@ -55,11 +55,6 @@ namespace photinox::native
         {
             getVersion_ = LoadExport<decltype(getVersion_)>("Photino_GetNativeVersion");
 
-            //window
-            windowCreate_ = LoadExport<decltype(windowCreate_)>("Photino_ctor");
-            windowShow_ = LoadExport<decltype(windowShow_)>("Photino_Show");
-            windowClose_ = LoadExport<decltype(windowClose_)>("Photino_Close");
-
             //application
             applicationRun_ = LoadExport<decltype(applicationRun_)>("PhotinoApplication_Run");
             applicationShutdown_ = LoadExport<decltype(applicationShutdown_)>("PhotinoApplication_Shutdown");
@@ -68,9 +63,16 @@ namespace photinox::native
             applicationCheckAccess_ = LoadExport<decltype(applicationCheckAccess_)>("PhotinoApplication_CheckAccess");
             applicationInvoke_ = LoadExport<decltype(applicationInvoke_)>("PhotinoApplication_Invoke");
             applicationBeginInvoke_ = LoadExport<decltype(applicationBeginInvoke_)>("PhotinoApplication_BeginInvoke");
+
             //notifications
+            applicationShowNotification_ = LoadExport<decltype(applicationShowNotification_)>("PhotinoApplication_ShowNotification");
             applicationGetNotificationsEnabled_ = LoadExport<decltype(applicationGetNotificationsEnabled_)>("PhotinoApplication_GetNotificationsEnabled");
             applicationSetNotificationsEnabled_ = LoadExport<decltype(applicationSetNotificationsEnabled_)>("PhotinoApplication_SetNotificationsEnabled");
+
+            //window
+            windowCreate_ = LoadExport<decltype(windowCreate_)>("Photino_ctor");
+            windowShow_ = LoadExport<decltype(windowShow_)>("Photino_Show");
+            windowClose_ = LoadExport<decltype(windowClose_)>("Photino_Close");
         }
         catch (...)
         {
@@ -92,20 +94,7 @@ namespace photinox::native
         return getVersion_();
     }
 
-    void* Library::WindowCreate(WindowInitParams* initParams) const
-    {
-        return windowCreate_(initParams);
-    }
-
-    bool Library::WindowShow(void* instance) const
-    {
-        return windowShow_(instance);
-    }
-
-    void Library::WindowClose(void* instance) const noexcept
-    {
-        windowClose_(instance);
-    }
+    //application
 
     int Library::ApplicationRun(const ApplicationInitParams* initParams) const
     {
@@ -142,6 +131,13 @@ namespace photinox::native
         return applicationBeginInvoke_(callback, release, state);
     }
 
+    //notifications
+
+    int Library::ApplicationShowNotification(const NotificationShowParams* showParams) const
+    {
+        return applicationShowNotification_(showParams);
+    }
+
     bool Library::ApplicationGetNotificationsEnabled() const noexcept
     {
         bool enabled = false;
@@ -152,5 +148,22 @@ namespace photinox::native
     void Library::ApplicationSetNotificationsEnabled(bool enabled) const noexcept
     {
         applicationSetNotificationsEnabled_(enabled);
+    }
+
+    //window
+
+    void* Library::WindowCreate(WindowInitParams* initParams) const
+    {
+        return windowCreate_(initParams);
+    }
+
+    bool Library::WindowShow(void* instance) const
+    {
+        return windowShow_(instance);
+    }
+
+    void Library::WindowClose(void* instance) const noexcept
+    {
+        windowClose_(instance);
     }
 }

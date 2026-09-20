@@ -45,8 +45,5 @@ namespace photinox
         std::unique_ptr<Impl> impl_;
 
         void InternalClose();
-        void OnCreated(void* instance, bool registered) noexcept;
-        bool OnClosing() noexcept;
-        void OnClosed() noexcept;
     };
 }

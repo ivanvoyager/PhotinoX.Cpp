@@ -18,14 +18,12 @@ namespace photinox
     class Window::Impl final
     {
     public:
-        explicit Impl(Window& owner, Application& application, Window* parent)
-            : owner(owner),
-            application(application),
+        explicit Impl(Application& application, Window* parent)
+            : application(application),
             parent(parent)
         {
         }
 
-        Window& owner;
         Application& application;
         Window* parent;
 
@@ -43,7 +41,7 @@ namespace photinox
         bool isClosed = false;
         bool forceClose = false;
 
-        native::WindowInitParams CreateInitParams() noexcept
+        native::WindowInitParams CreateInitParams(Window* window) noexcept
         {
             native::WindowInitParams params{};
 
@@ -58,7 +56,7 @@ namespace photinox
             params.callbacks.createdHandler = CreatedCallback;
             params.callbacks.closingHandler = ClosingCallback;
             params.callbacks.closedHandler = ClosedCallback;
-            params.callbacks.callbackState = &owner;
+            params.callbacks.callbackState = window;
 
             params.window.title = title.c_str();
 
@@ -71,8 +69,7 @@ namespace photinox
             params.geometry.useOsDefaultLocation = true;
             params.geometry.useOsDefaultSize = true;
 
-            params.browser.startString =
-                startString.empty() ? nullptr : startString.c_str();
+            params.browser.startString = startString.empty() ? nullptr : startString.c_str();
 
             params.browser.zoom = 100;
             params.browser.zoomEnabled = true;
@@ -94,25 +91,73 @@ namespace photinox
 
         static void CreatedCallback(void* instance, bool registered, void* state) noexcept
         {
+            assert(instance);
+
             auto& window = *static_cast<Window*>(state);
-            window.OnCreated(instance, registered);
+            auto& impl = *window.impl_;
+
+            assert(!impl.nativeInstance);
+
+            impl.nativeInstance = instance;
+            impl.application.OnWindowCreated(window, registered);
+
+            try
+            {
+                impl.createdHandlers();
+            }
+            catch (...)
+            {
+                impl.application.Shutdown(-1, true);
+            }
         }
 
         static bool ClosingCallback(void* state) noexcept
         {
             auto& window = *static_cast<Window*>(state);
-            return window.OnClosing();
+            auto& impl = *window.impl_;
+
+            if (impl.forceClose)
+                return false;
+
+            try
+            {
+                ClosingEventArgs args;
+                impl.closingHandlers(args);
+                return args.cancel;
+            }
+            catch (...)
+            {
+                impl.application.Shutdown(-1, true);
+                return false;
+            }
         }
 
         static void ClosedCallback(void* state) noexcept
         {
             auto& window = *static_cast<Window*>(state);
-            window.OnClosed();
+            auto& impl = *window.impl_;
+
+            assert(impl.nativeInstance);
+
+            impl.nativeInstance = nullptr;
+            impl.isClosed = true;
+            impl.forceClose = false;
+
+            impl.application.OnWindowClosed(window);
+
+            try
+            {
+                impl.closedHandlers();
+            }
+            catch (...)
+            {
+                impl.application.Shutdown(-1, true);
+            }
         }
     };
 
     Window::Window(Application& application, Window* parent)
-        : impl_(std::make_unique<Impl>(*this, application, parent))
+        : impl_(std::make_unique<Impl>(application, parent))
     {
     }
 
@@ -132,62 +177,6 @@ namespace photinox
 
         impl_->forceClose = true;
         Close();
-    }
-
-    void Window::OnCreated(void* instance, bool registered) noexcept
-    {
-        assert(instance);
-        assert(!impl_->nativeInstance);
-
-        impl_->nativeInstance = instance;
-        impl_->application.OnWindowCreated(*this, registered);
-
-        try
-        {
-            impl_->createdHandlers();
-        }
-        catch (...)
-        {
-            impl_->application.Shutdown(-1, true);
-        }
-    }
-
-    bool Window::OnClosing() noexcept
-    {
-        if (impl_->forceClose)
-            return false;
-
-        try
-        {
-            ClosingEventArgs args;
-            impl_->closingHandlers(args);
-            return args.cancel;
-        }
-        catch (...)
-        {
-            impl_->application.Shutdown(-1, true);
-            return false;
-        }
-    }
-
-    void Window::OnClosed() noexcept
-    {
-        assert(impl_->nativeInstance);
-
-        impl_->nativeInstance = nullptr;
-        impl_->isClosed = true;
-        impl_->forceClose = false;
-
-        impl_->application.OnWindowClosed(*this);
-
-        try
-        {
-            impl_->closedHandlers();
-        }
-        catch (...)
-        {
-            impl_->application.Shutdown(-1, true);
-        }
     }
 
     bool Window::IsInitialized() const noexcept
@@ -295,11 +284,13 @@ namespace photinox
 
         if (impl_->nativeInstance)
         {
-            impl_->application.GetDispatcher().Invoke([this]
+            const bool shown = impl_->application.GetDispatcher().Invoke([this]
             {
-                impl_->application.NativeLibrary().WindowShow(
-                    impl_->nativeInstance);
+                return impl_->application.NativeLibrary().WindowShow(impl_->nativeInstance);
             });
+
+            if (!shown)
+                throw std::runtime_error("Failed to show the window.");
 
             return;
         }
@@ -328,7 +319,7 @@ namespace photinox
             throw std::invalid_argument("Initial browser content must be supplied with LoadString.");
         }
 
-        auto params = impl_->CreateInitParams();
+        auto params = impl_->CreateInitParams(this);
 
         void* nativeInstance =
             impl_->application.NativeLibrary().WindowCreate(&params);

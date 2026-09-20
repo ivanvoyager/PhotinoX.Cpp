@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <climits>
 #include <cstdint>
 #include <exception>
 #include <mutex>
@@ -60,9 +61,21 @@ namespace photinox
         using ShutdownRequestedHandlerList = eventpp::CallbackList<void(ShutdownRequestedEventArgs&)>;
         using ExitHandlerList = eventpp::CallbackList<void(ExitEventArgs&)>;
 
+        using NotificationActivatedHandlerList = eventpp::CallbackList<void(const NotificationActivatedEventArgs&)>;
+        using NotificationActionActivatedHandlerList = eventpp::CallbackList<void(const NotificationActionActivatedEventArgs&)>;
+        using NotificationInputActivatedHandlerList = eventpp::CallbackList<void(const NotificationInputActivatedEventArgs&)>;
+        using NotificationDismissedHandlerList = eventpp::CallbackList<void(const NotificationDismissedEventArgs&)>;
+        using NotificationFailedHandlerList = eventpp::CallbackList<void(const NotificationFailedEventArgs&)>;
+
         StartupHandlerList startupHandlers;
         ShutdownRequestedHandlerList shutdownRequestedHandlers;
         ExitHandlerList exitHandlers;
+
+        NotificationActivatedHandlerList notificationActivatedHandlers;
+        NotificationActionActivatedHandlerList notificationActionActivatedHandlers;
+        NotificationInputActivatedHandlerList notificationInputActivatedHandlers;
+        NotificationDismissedHandlerList notificationDismissedHandlers;
+        NotificationFailedHandlerList notificationFailedHandlers;
 
         std::mutex eventSubscriptionsMutex;
         const std::uint64_t eventOwnerId = NextEventOwnerId();
@@ -72,9 +85,24 @@ namespace photinox
         std::unordered_map<std::uint64_t, ShutdownRequestedHandlerList::Handle> shutdownRequestedHandlerSubscriptions;
         std::unordered_map<std::uint64_t, ExitHandlerList::Handle> exitHandlerSubscriptions;
 
+        std::unordered_map<std::uint64_t, NotificationActivatedHandlerList::Handle> notificationActivatedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, NotificationActionActivatedHandlerList::Handle> notificationActionActivatedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, NotificationInputActivatedHandlerList::Handle> notificationInputActivatedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, NotificationDismissedHandlerList::Handle> notificationDismissedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, NotificationFailedHandlerList::Handle> notificationFailedHandlerSubscriptions;
+
         std::exception_ptr callbackException;
         std::atomic_bool isRunning = false;
         std::atomic_bool notificationsEnabled = true;
+
+        struct NotificationState final
+        {
+            int id;
+            std::any value;
+        };
+
+        std::unordered_map<int, std::unique_ptr<NotificationState>> notificationStates;
+        int nextNotificationId = 0;
 
         void SetCallbackException(std::exception_ptr exception) noexcept
         {
@@ -82,7 +110,7 @@ namespace photinox
                 callbackException = std::move(exception);
         }
 
-        native::ApplicationInitParams CreateInitParams() noexcept
+        native::ApplicationInitParams CreateInitParams(Application* application) noexcept
         {
             native::ApplicationInitParams params{};
 
@@ -93,7 +121,7 @@ namespace photinox
             params.callbacks.shutdownRequestedHandler = ShutdownRequestedCallback;
             params.callbacks.exitHandler = ExitCallback;
             params.callbacks.windowCollectionChangedHandler = WindowCollectionChangedCallback;
-            params.callbacks.callbackState = this;
+            params.callbacks.callbackState = application;
 
             params.options.applicationName = name.empty() ? nullptr : name.c_str();
             params.options.applicationIconPath = iconPath.empty() ? nullptr : iconPath.c_str();
@@ -101,13 +129,63 @@ namespace photinox
                 notificationRegistrationId.empty() ? nullptr : notificationRegistrationId.c_str();
             params.options.notificationsEnabled = notificationsEnabled.load(std::memory_order_acquire);
 
+            params.notificationCallbacks.notificationActivatedHandler = NotificationActivatedCallback;
+            params.notificationCallbacks.notificationActionActivatedHandler = NotificationActionActivatedCallback;
+            params.notificationCallbacks.notificationInputActivatedHandler = NotificationInputActivatedCallback;
+            params.notificationCallbacks.notificationDismissedHandler = NotificationDismissedCallback;
+            params.notificationCallbacks.notificationFailedHandler = NotificationFailedCallback;
+
             return params;
         }
 
+        int NewNotificationId() noexcept
+        {
+            if (nextNotificationId == INT_MAX)
+                nextNotificationId = 1;
+            else
+                ++nextNotificationId;
+
+            return nextNotificationId;
+        }
+
+        std::any RemoveNotificationState(int notificationId, void* expectedState) noexcept
+        {
+            if (!expectedState)
+                return {};
+
+            const auto iterator = notificationStates.find(notificationId);
+
+            if (iterator == notificationStates.end())
+                return {};
+
+            auto* trackedState = iterator->second.get();
+
+            assert(trackedState == expectedState);
+
+            if (trackedState != expectedState)
+            {
+                notificationStates.erase(iterator);
+                return {};
+            }
+
+            std::any value = std::move(trackedState->value);
+            notificationStates.erase(iterator);
+            return value;
+        }
+
+        void ClearNotificationStates() noexcept
+        {
+            notificationStates.clear();
+        }
+
     private:
+
         static void StartupCallback(void* state) noexcept
         {
-            auto& impl = *static_cast<Impl*>(state);
+            auto& application = *static_cast<Application*>(state);
+            auto& impl = *application.impl_;
+
+            assert(impl.notificationStates.empty());
 
             try
             {
@@ -122,7 +200,8 @@ namespace photinox
 
         static bool ShutdownRequestedCallback(ShutdownRequestReason reason, void* state) noexcept
         {
-            auto& impl = *static_cast<Impl*>(state);
+            auto& application = *static_cast<Application*>(state);
+            auto& impl = *application.impl_;
 
             try
             {
@@ -132,7 +211,6 @@ namespace photinox
                 };
 
                 impl.shutdownRequestedHandlers(args);
-
                 return args.cancel;
             }
             catch (...)
@@ -144,7 +222,8 @@ namespace photinox
 
         static int ExitCallback(int exitCode, void* state) noexcept
         {
-            auto& impl = *static_cast<Impl*>(state);
+            auto& application = *static_cast<Application*>(state);
+            auto& impl = *application.impl_;
 
             try
             {
@@ -154,7 +233,6 @@ namespace photinox
                 };
 
                 impl.exitHandlers(args);
-
                 return args.applicationExitCode;
             }
             catch (...)
@@ -167,7 +245,8 @@ namespace photinox
         static void WindowCollectionChangedCallback(NotifyCollectionChangedAction action, void* const* newItems, int newItemsCount,
                                                     void* const* oldItems, int oldItemsCount, void* state) noexcept
         {
-            auto& impl = *static_cast<Impl*>(state);
+            auto& application = *static_cast<Application*>(state);
+            auto& impl = *application.impl_;
 
             try
             {
@@ -190,8 +269,7 @@ namespace photinox
                             auto* window = static_cast<Window*>(oldItems[i]);
                             assert(window);
 
-                            const auto iterator =
-                                std::find(impl.windows.begin(), impl.windows.end(), window);
+                            const auto iterator = std::find(impl.windows.begin(), impl.windows.end(), window);
 
                             assert(iterator != impl.windows.end());
 
@@ -211,6 +289,116 @@ namespace photinox
                 impl.library.ApplicationShutdown(-1, true);
             }
         }
+
+        static void NotificationActivatedCallback(int notificationId, void* notificationState, void* state) noexcept
+        {
+            auto& application = *static_cast<Application*>(state);
+            auto& impl = *application.impl_;
+
+            try
+            {
+
+                NotificationActivatedEventArgs args
+                {
+                    .notificationId = notificationId,
+                    .state = impl.RemoveNotificationState(notificationId, notificationState)
+                };
+
+                impl.notificationActivatedHandlers(args);
+            }
+            catch (...)
+            {
+                application.OnUnhandledException(std::current_exception());
+            }
+        }
+
+        static void NotificationActionActivatedCallback(int notificationId, int actionIndex, void* notificationState, void* state) noexcept
+        {
+            auto& application = *static_cast<Application*>(state);
+            auto& impl = *application.impl_;
+
+            try
+            {
+                NotificationActionActivatedEventArgs args
+                {
+                    .notificationId = notificationId,
+                    .actionIndex = actionIndex,
+                    .state = impl.RemoveNotificationState(notificationId, notificationState)
+                };
+
+                impl.notificationActionActivatedHandlers(args);
+            }
+            catch (...)
+            {
+                application.OnUnhandledException(std::current_exception());
+            }
+        }
+
+        static void NotificationInputActivatedCallback(int notificationId, const char* response, void* notificationState, void* state) noexcept
+        {
+            auto& application = *static_cast<Application*>(state);
+            auto& impl = *application.impl_;
+
+            try
+            {
+                NotificationInputActivatedEventArgs args
+                {
+                    .notificationId = notificationId,
+                    .response = response ? response : "",
+                    .state = impl.RemoveNotificationState(notificationId, notificationState)
+                };
+
+                impl.notificationInputActivatedHandlers(args);
+            }
+            catch (...)
+            {
+                application.OnUnhandledException(std::current_exception());
+            }
+        }
+
+        static void NotificationDismissedCallback(int notificationId, NotificationDismissalReason reason, void* notificationState, void* state) noexcept
+        {
+            auto& application = *static_cast<Application*>(state);
+            auto& impl = *application.impl_;
+
+            try
+            {
+                NotificationDismissedEventArgs args
+                {
+                    .notificationId = notificationId,
+                    .reason = reason,
+                    .state = impl.RemoveNotificationState(notificationId, notificationState)
+                };
+
+                impl.notificationDismissedHandlers(args);
+            }
+            catch (...)
+            {
+                application.OnUnhandledException(std::current_exception());
+            }
+        }
+
+        static void NotificationFailedCallback(int notificationId, void* notificationState, void* state) noexcept
+        {
+            auto& application = *static_cast<Application*>(state);
+            auto& impl = *application.impl_;
+
+            try
+            {
+                NotificationFailedEventArgs args
+                {
+                    .notificationId = notificationId,
+                    .state = impl.RemoveNotificationState(notificationId, notificationState)
+                };
+
+                impl.notificationFailedHandlers(args);
+            }
+            catch (...)
+            {
+                application.OnUnhandledException(std::current_exception());
+            }
+        }
+
     };
 
     Application::Application()
@@ -371,8 +559,10 @@ namespace photinox
             if (mainWindow)
                 mainWindow->Show();
 
-            auto params = impl_->CreateInitParams();
+            auto params = impl_->CreateInitParams(this);
             const int exitCode = impl_->library.ApplicationRun(&params);
+
+            impl_->ClearNotificationStates();
 
             assert(impl_->windows.empty());
 
@@ -386,6 +576,7 @@ namespace photinox
         }
         catch (...)
         {
+            impl_->ClearNotificationStates();
             impl_->mainWindow = nullptr;
             impl_->isRunning.store(false, std::memory_order_release);
             throw;
@@ -408,6 +599,111 @@ namespace photinox
             if (window)
                 window->InternalClose();
         }
+    }
+
+    void Application::OnWindowCreated(Window& window, bool registered)
+    {
+        assert(GetDispatcher().CheckAccess());
+
+        if (registered)
+        {
+            assert(std::find(impl_->windows.begin(), impl_->windows.end(), &window) != impl_->windows.end());
+            return;
+        }
+
+        assert(std::find(impl_->windows.begin(), impl_->windows.end(), &window) == impl_->windows.end());
+        impl_->windows.push_back(&window);
+    }
+
+    void Application::OnWindowClosed(Window& window)
+    {
+        assert(GetDispatcher().CheckAccess());
+        assert(std::find(impl_->windows.begin(), impl_->windows.end(), &window) == impl_->windows.end());
+
+        const bool isMainWindow = impl_->mainWindow == &window;
+
+        if (isMainWindow)
+            impl_->mainWindow = nullptr;
+
+        if (impl_->shutdownMode == ShutdownMode::OnExplicitShutdown)
+            return;
+
+        if (impl_->shutdownMode == ShutdownMode::OnMainWindowClose && isMainWindow)
+        {
+            Shutdown(0, true);
+            return;
+        }
+
+        if (impl_->shutdownMode == ShutdownMode::OnLastWindowClose && impl_->windows.empty())
+            Shutdown(0, true);
+    }
+
+    void Application::OnUnhandledException(std::exception_ptr exception) const noexcept
+    {
+        impl_->dispatcher->OnUnhandledException(std::move(exception));
+    }
+
+    /*  Contract:
+    > 0  request accepted/tracked; callbacks may follow
+      0  not shown by policy/state; no callback
+     -1  invalid request / ABI / precondition failure; no callback
+     -2  native notification backend initialization failure; no callback
+     -3  native notification show failure; no callback
+    */
+    int Application::ShowNotification(std::string_view title, std::string_view body, std::string_view iconPath, std::any state)
+    {
+        if (title.empty())
+            throw std::invalid_argument("title");
+
+        if (body.empty())
+            throw std::invalid_argument("body");
+
+        if (!IsRunning() || IsShuttingDown())
+            throw std::logic_error("The application is not running.");
+
+        return GetDispatcher().Invoke(
+            [this, title = std::string(title), body = std::string(body),
+             iconPath = std::string(iconPath), state = std::move(state)]() mutable
+            {
+                if (!impl_->library.ApplicationGetNotificationsEnabled())
+                    return 0;
+
+                const int notificationId = impl_->NewNotificationId();
+                Impl::NotificationState* callbackState = nullptr;
+
+                if (state.has_value())
+                {
+                    auto notificationState = std::make_unique<Impl::NotificationState>(
+                        Impl::NotificationState
+                        {
+                            .id = notificationId,
+                            .value = std::move(state)
+                        });
+
+                    callbackState = notificationState.get();
+
+                    const auto [_, inserted] = impl_->notificationStates.emplace(notificationId, std::move(notificationState));
+
+                    if (!inserted)
+                        return -1;
+                }
+
+                native::NotificationShowParams params{};
+                params.size = sizeof(native::NotificationShowParams);
+                params.abiVersion = native::NotificationShowParams::NativeAbiVersion;
+                params.notificationId = notificationId;
+                params.title = title.c_str();
+                params.body = body.c_str();
+                params.iconPath = iconPath.empty() ? nullptr : iconPath.c_str();
+                params.callbackState = callbackState;
+
+                const int result = impl_->library.ApplicationShowNotification(&params);
+
+                if (result <= 0 && callbackState)
+                    impl_->notificationStates.erase(notificationId);
+
+                return result;
+            });
     }
 
     Application& Application::RegisterStartupHandler(StartupHandler handler)
@@ -563,40 +859,253 @@ namespace photinox
         return removed;
     }
 
-    void Application::OnWindowCreated(Window& window, bool registered)
+    Application& Application::RegisterNotificationActivatedHandler(NotificationActivatedHandler handler)
     {
-        assert(GetDispatcher().CheckAccess());
-
-        if (registered)
-        {
-            assert(std::find(impl_->windows.begin(), impl_->windows.end(), &window) != impl_->windows.end());
-            return;
-        }
-
-        assert(std::find(impl_->windows.begin(), impl_->windows.end(), &window) == impl_->windows.end());
-        impl_->windows.push_back(&window);
+        ValidateHandler(handler);
+        impl_->notificationActivatedHandlers.append(std::move(handler));
+        return *this;
     }
 
-    void Application::OnWindowClosed(Window& window)
+    EventToken Application::SubscribeNotificationActivatedHandler(NotificationActivatedHandler handler)
     {
-        assert(GetDispatcher().CheckAccess());
-        assert(std::find(impl_->windows.begin(), impl_->windows.end(), &window) == impl_->windows.end());
+        ValidateHandler(handler);
 
-        const bool isMainWindow = impl_->mainWindow == &window;
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
 
-        if (isMainWindow)
-            impl_->mainWindow = nullptr;
+        const EventToken token = NextEventToken();
+        auto handle = impl_->notificationActivatedHandlers.append(std::move(handler));
 
-        if (impl_->shutdownMode == ShutdownMode::OnExplicitShutdown)
-            return;
-
-        if (impl_->shutdownMode == ShutdownMode::OnMainWindowClose && isMainWindow)
+        try
         {
-            Shutdown(0, true);
-            return;
+            impl_->notificationActivatedHandlerSubscriptions.emplace(token.value_, handle);
+        }
+        catch (...)
+        {
+            const bool removed = impl_->notificationActivatedHandlers.remove(handle);
+            assert(removed);
+            throw;
         }
 
-        if (impl_->shutdownMode == ShutdownMode::OnLastWindowClose && impl_->windows.empty())
-            Shutdown(0, true);
+        return token;
+    }
+
+    bool Application::UnsubscribeNotificationActivatedHandler(EventToken token)
+    {
+        if (!token || token.ownerId_ != impl_->eventOwnerId)
+            return false;
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        auto& subscriptions = impl_->notificationActivatedHandlerSubscriptions;
+        const auto iterator = subscriptions.find(token.value_);
+
+        if (iterator == subscriptions.end())
+            return false;
+
+        const bool removed = impl_->notificationActivatedHandlers.remove(iterator->second);
+        assert(removed);
+
+        subscriptions.erase(iterator);
+        return removed;
+    }
+
+    Application& Application::RegisterNotificationActionActivatedHandler(NotificationActionActivatedHandler handler)
+    {
+        ValidateHandler(handler);
+        impl_->notificationActionActivatedHandlers.append(std::move(handler));
+        return *this;
+    }
+
+    EventToken Application::SubscribeNotificationActionActivatedHandler(NotificationActionActivatedHandler handler)
+    {
+        ValidateHandler(handler);
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        const EventToken token = NextEventToken();
+        auto handle = impl_->notificationActionActivatedHandlers.append(std::move(handler));
+
+        try
+        {
+            impl_->notificationActionActivatedHandlerSubscriptions.emplace(token.value_, handle);
+        }
+        catch (...)
+        {
+            const bool removed = impl_->notificationActionActivatedHandlers.remove(handle);
+            assert(removed);
+            throw;
+        }
+
+        return token;
+    }
+
+    bool Application::UnsubscribeNotificationActionActivatedHandler(EventToken token)
+    {
+        if (!token || token.ownerId_ != impl_->eventOwnerId)
+            return false;
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        auto& subscriptions = impl_->notificationActionActivatedHandlerSubscriptions;
+        const auto iterator = subscriptions.find(token.value_);
+
+        if (iterator == subscriptions.end())
+            return false;
+
+        const bool removed = impl_->notificationActionActivatedHandlers.remove(iterator->second);
+        assert(removed);
+
+        subscriptions.erase(iterator);
+        return removed;
+    }
+
+    Application& Application::RegisterNotificationInputActivatedHandler(NotificationInputActivatedHandler handler)
+    {
+        ValidateHandler(handler);
+        impl_->notificationInputActivatedHandlers.append(std::move(handler));
+        return *this;
+    }
+
+    EventToken Application::SubscribeNotificationInputActivatedHandler(NotificationInputActivatedHandler handler)
+    {
+        ValidateHandler(handler);
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        const EventToken token = NextEventToken();
+        auto handle = impl_->notificationInputActivatedHandlers.append(std::move(handler));
+
+        try
+        {
+            impl_->notificationInputActivatedHandlerSubscriptions.emplace(token.value_, handle);
+        }
+        catch (...)
+        {
+            const bool removed = impl_->notificationInputActivatedHandlers.remove(handle);
+            assert(removed);
+            throw;
+        }
+
+        return token;
+    }
+
+    bool Application::UnsubscribeNotificationInputActivatedHandler(EventToken token)
+    {
+        if (!token || token.ownerId_ != impl_->eventOwnerId)
+            return false;
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        auto& subscriptions = impl_->notificationInputActivatedHandlerSubscriptions;
+        const auto iterator = subscriptions.find(token.value_);
+
+        if (iterator == subscriptions.end())
+            return false;
+
+        const bool removed = impl_->notificationInputActivatedHandlers.remove(iterator->second);
+        assert(removed);
+
+        subscriptions.erase(iterator);
+        return removed;
+    }
+
+    Application& Application::RegisterNotificationDismissedHandler(NotificationDismissedHandler handler)
+    {
+        ValidateHandler(handler);
+        impl_->notificationDismissedHandlers.append(std::move(handler));
+        return *this;
+    }
+
+    EventToken Application::SubscribeNotificationDismissedHandler(NotificationDismissedHandler handler)
+    {
+        ValidateHandler(handler);
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        const EventToken token = NextEventToken();
+        auto handle = impl_->notificationDismissedHandlers.append(std::move(handler));
+
+        try
+        {
+            impl_->notificationDismissedHandlerSubscriptions.emplace(token.value_, handle);
+        }
+        catch (...)
+        {
+            const bool removed = impl_->notificationDismissedHandlers.remove(handle);
+            assert(removed);
+            throw;
+        }
+
+        return token;
+    }
+
+    bool Application::UnsubscribeNotificationDismissedHandler(EventToken token)
+    {
+        if (!token || token.ownerId_ != impl_->eventOwnerId)
+            return false;
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        auto& subscriptions = impl_->notificationDismissedHandlerSubscriptions;
+        const auto iterator = subscriptions.find(token.value_);
+
+        if (iterator == subscriptions.end())
+            return false;
+
+        const bool removed = impl_->notificationDismissedHandlers.remove(iterator->second);
+        assert(removed);
+
+        subscriptions.erase(iterator);
+        return removed;
+    }
+
+    Application& Application::RegisterNotificationFailedHandler(NotificationFailedHandler handler)
+    {
+        ValidateHandler(handler);
+        impl_->notificationFailedHandlers.append(std::move(handler));
+        return *this;
+    }
+
+    EventToken Application::SubscribeNotificationFailedHandler(NotificationFailedHandler handler)
+    {
+        ValidateHandler(handler);
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        const EventToken token = NextEventToken();
+        auto handle = impl_->notificationFailedHandlers.append(std::move(handler));
+
+        try
+        {
+            impl_->notificationFailedHandlerSubscriptions.emplace(token.value_, handle);
+        }
+        catch (...)
+        {
+            const bool removed = impl_->notificationFailedHandlers.remove(handle);
+            assert(removed);
+            throw;
+        }
+
+        return token;
+    }
+
+    bool Application::UnsubscribeNotificationFailedHandler(EventToken token)
+    {
+        if (!token || token.ownerId_ != impl_->eventOwnerId)
+            return false;
+
+        std::lock_guard lock(impl_->eventSubscriptionsMutex);
+
+        auto& subscriptions = impl_->notificationFailedHandlerSubscriptions;
+        const auto iterator = subscriptions.find(token.value_);
+
+        if (iterator == subscriptions.end())
+            return false;
+
+        const bool removed = impl_->notificationFailedHandlers.remove(iterator->second);
+        assert(removed);
+
+        subscriptions.erase(iterator);
+        return removed;
     }
 }

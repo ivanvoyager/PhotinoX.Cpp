@@ -4,6 +4,8 @@
 #include <photinox/dispatcher.hpp>
 #include <photinox/event_token.hpp>
 
+#include <any>
+#include <exception>
 #include <memory>
 #include <span>
 #include <string_view>
@@ -59,6 +61,8 @@ namespace photinox
 
         void Shutdown(int exitCode = 0, bool force = false) const noexcept;
 
+        [[nodiscard]] int ShowNotification(std::string_view title, std::string_view body, std::string_view iconPath = {}, std::any state = {});
+
         Application& RegisterStartupHandler(StartupHandler handler);
         [[nodiscard]] EventToken SubscribeStartupHandler(StartupHandler handler);
         bool UnsubscribeStartupHandler(EventToken token);
@@ -71,6 +75,26 @@ namespace photinox
         [[nodiscard]] EventToken SubscribeExitHandler(ExitHandler handler);
         bool UnsubscribeExitHandler(EventToken token);
 
+        Application& RegisterNotificationActivatedHandler(NotificationActivatedHandler handler);
+        [[nodiscard]] EventToken SubscribeNotificationActivatedHandler(NotificationActivatedHandler handler);
+        bool UnsubscribeNotificationActivatedHandler(EventToken token);
+
+        Application& RegisterNotificationActionActivatedHandler(NotificationActionActivatedHandler handler);
+        [[nodiscard]] EventToken SubscribeNotificationActionActivatedHandler(NotificationActionActivatedHandler handler);
+        bool UnsubscribeNotificationActionActivatedHandler(EventToken token);
+
+        Application& RegisterNotificationInputActivatedHandler(NotificationInputActivatedHandler handler);
+        [[nodiscard]] EventToken SubscribeNotificationInputActivatedHandler(NotificationInputActivatedHandler handler);
+        bool UnsubscribeNotificationInputActivatedHandler(EventToken token);
+
+        Application& RegisterNotificationDismissedHandler(NotificationDismissedHandler handler);
+        [[nodiscard]] EventToken SubscribeNotificationDismissedHandler(NotificationDismissedHandler handler);
+        bool UnsubscribeNotificationDismissedHandler(EventToken token);
+
+        Application& RegisterNotificationFailedHandler(NotificationFailedHandler handler);
+        [[nodiscard]] EventToken SubscribeNotificationFailedHandler(NotificationFailedHandler handler);
+        bool UnsubscribeNotificationFailedHandler(EventToken token);
+
     private:
         friend class Window;
 
@@ -82,8 +106,9 @@ namespace photinox
         [[nodiscard]] EventToken NextEventToken();
 
         void CloseWindows();
-
         void OnWindowCreated(Window& window, bool registered);
         void OnWindowClosed(Window& window);
+
+        void OnUnhandledException(std::exception_ptr exception) const noexcept;
     };
 }

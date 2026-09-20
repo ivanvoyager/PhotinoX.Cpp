@@ -100,5 +100,47 @@ int main()
                 }
             });
 
+    application.RegisterNotificationActivatedHandler([](const NotificationActivatedEventArgs& args)
+    {
+        std::cout << "Notification activated: " << args.notificationId << '\n';
+
+        if (const auto* state = std::any_cast<std::string>(&args.state))
+            std::cout << "Notification state: " << *state << '\n';
+    });
+
+    application.RegisterNotificationActionActivatedHandler([](const NotificationActionActivatedEventArgs& args)
+    {
+        std::cout << "Notification action activated: " << args.notificationId << ", action: " << args.actionIndex << '\n';
+    });
+
+    application.RegisterNotificationInputActivatedHandler([](const NotificationInputActivatedEventArgs& args)
+    {
+        std::cout << "Notification input activated: " << args.notificationId << ", response: " << args.response << '\n';
+    });
+
+    application.RegisterNotificationDismissedHandler([](const NotificationDismissedEventArgs& args)
+    {
+        std::cout << "Notification dismissed: " << args.notificationId << " Reason: " << (int)args.reason << '\n';
+
+        if (const auto* state = std::any_cast<std::string>(&args.state))
+            std::cout << "Notification state: " << *state << '\n';
+    });
+
+    application.RegisterNotificationFailedHandler([](const NotificationFailedEventArgs& args)
+    {
+        std::cout << "Notification failed: " << args.notificationId << '\n';
+    });
+
+    application.RegisterStartupHandler([&application]
+    {
+        const int notificationId = application.ShowNotification(
+            "PhotinoX",
+            "Notification test",
+            {},
+            std::string("Test state"));
+
+        std::cout << "ShowNotification result: " << notificationId << '\n';
+    });
+
     return application.Run(&window);
 }

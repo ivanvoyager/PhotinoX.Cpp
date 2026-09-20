@@ -3,6 +3,7 @@
 #include <photinox/callbacks.hpp>
 
 #include "application.hpp"
+#include "notification.hpp"
 #include "window.hpp"
 
 namespace photinox::native
@@ -21,11 +22,6 @@ namespace photinox::native
 
         [[nodiscard]] const char* GetVersion() const noexcept;
 
-        //window
-        [[nodiscard]] void* WindowCreate(WindowInitParams* initParams) const;
-        [[nodiscard]] bool WindowShow(void* instance) const;
-        void WindowClose(void* instance) const noexcept;
-
         //application
         [[nodiscard]] int ApplicationRun(const ApplicationInitParams* initParams) const;
         void ApplicationShutdown(int exitCode, bool force) const noexcept;
@@ -35,8 +31,13 @@ namespace photinox::native
         [[nodiscard]] bool ApplicationInvoke(InvokeStateCallback callback, void* state) const;
         [[nodiscard]] bool ApplicationBeginInvoke(InvokeStateCallback callback, ReleaseStateCallback release, void* state) const noexcept;
         //notifications
+        [[nodiscard]] int ApplicationShowNotification(const NotificationShowParams* showParams) const;
         [[nodiscard]] bool ApplicationGetNotificationsEnabled() const noexcept;
         void ApplicationSetNotificationsEnabled(bool enabled) const noexcept;
+        //window
+        [[nodiscard]] void* WindowCreate(WindowInitParams* initParams) const;
+        [[nodiscard]] bool WindowShow(void* instance) const;
+        void WindowClose(void* instance) const noexcept;
 
     private:
         template<typename T>
@@ -45,11 +46,6 @@ namespace photinox::native
         void* handle_ = nullptr;
 
         const char* (*getVersion_)() = nullptr;
-
-        //window
-        void* (*windowCreate_)(WindowInitParams*) = nullptr;
-        bool (*windowShow_)(void*) = nullptr;
-        void (*windowClose_)(void*) = nullptr;
 
         //application
         int (*applicationRun_)(const ApplicationInitParams*) = nullptr;
@@ -60,7 +56,12 @@ namespace photinox::native
         bool (*applicationInvoke_)(InvokeStateCallback, void*) = nullptr;
         bool (*applicationBeginInvoke_)(InvokeStateCallback, ReleaseStateCallback, void*) = nullptr;
         //notifications
+        int (*applicationShowNotification_)(const NotificationShowParams*) = nullptr;
         void (*applicationGetNotificationsEnabled_)(bool*) = nullptr;
         void (*applicationSetNotificationsEnabled_)(bool) = nullptr;
+        //window
+        void* (*windowCreate_)(WindowInitParams*) = nullptr;
+        bool (*windowShow_)(void*) = nullptr;
+        void (*windowClose_)(void*) = nullptr;
     };
 }
