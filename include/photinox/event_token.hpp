@@ -4,9 +4,7 @@
 
 namespace photinox
 {
-    class Application;
-    class Dispatcher;
-    class WindowCollection;
+    class EventSubscriptionRegistry;
 
     class EventToken final
     {
@@ -21,9 +19,7 @@ namespace photinox
         friend constexpr bool operator==(EventToken, EventToken) noexcept = default;
 
     private:
-        friend class Application;
-        friend class Dispatcher;
-        friend class WindowCollection;
+        friend class EventSubscriptionRegistry;
 
         constexpr EventToken(std::uint64_t ownerId, std::uint64_t value) noexcept
             : ownerId_(ownerId),

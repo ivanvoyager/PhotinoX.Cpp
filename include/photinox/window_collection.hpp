@@ -29,9 +29,9 @@ namespace photinox
         [[nodiscard]] bool Contains(const Window& window) const;
         [[nodiscard]] std::vector<Window*> Snapshot() const;
 
-        WindowCollection& RegisterChangedHandler(WindowCollectionChangedHandler handler);
-        [[nodiscard]] EventToken SubscribeChangedHandler(WindowCollectionChangedHandler handler);
-        bool UnsubscribeChangedHandler(EventToken token);
+        WindowCollection& RegisterCollectionChangedHandler(WindowCollectionChangedHandler handler);
+        [[nodiscard]] EventToken SubscribeCollectionChangedHandler(WindowCollectionChangedHandler handler);
+        bool UnsubscribeCollectionChangedHandler(EventToken token);
 
     private:
         friend class Application;

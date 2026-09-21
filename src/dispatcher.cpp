@@ -2,7 +2,7 @@
 
 #include "native/library.hpp"
 
-#include "event_token.internal.hpp"
+#include "event_subscription.internal.hpp"
 
 #include <eventpp/callbacklist.h>
 
@@ -32,13 +32,6 @@ namespace photinox
             if (!callback)
                 throw std::invalid_argument("callback");
         }
-
-        template<typename THandler>
-        void ValidateHandler(const THandler& handler)
-        {
-            if (!handler)
-                throw std::invalid_argument("handler");
-        }
     } // namespace
 
     class Dispatcher::Impl final
@@ -57,22 +50,9 @@ namespace photinox
 
         UnhandledExceptionHandlerList unhandledExceptionHandlers;
 
-        std::mutex eventSubscriptionsMutex;
-        const std::uint64_t eventOwnerId = NextEventOwnerId();
-        std::uint64_t nextEventToken = 1;
+        EventSubscriptionRegistry eventSubscriptions;
 
         std::unordered_map<std::uint64_t, UnhandledExceptionHandlerList::Handle> unhandledExceptionHandlerSubscriptions;
-
-        [[nodiscard]] EventToken NextEventToken() noexcept
-        {
-            do
-            {
-                ++nextEventToken;
-            }
-            while (nextEventToken == 0);
-
-            return EventToken(eventOwnerId, nextEventToken);
-        }
     };
 
     Dispatcher::Dispatcher(native::Library& library)
@@ -229,53 +209,23 @@ namespace photinox
         return true;
     }
 
+    // Event subscription methods
+
+    // Unhandled Exception Handlers
+
     Dispatcher& Dispatcher::RegisterUnhandledExceptionHandler(UnhandledExceptionHandler handler)
     {
-        ValidateHandler(handler);
-        impl_->unhandledExceptionHandlers.append(std::move(handler));
+        RegisterEventHandler(impl_->unhandledExceptionHandlers, std::move(handler));
         return *this;
     }
 
     EventToken Dispatcher::SubscribeUnhandledExceptionHandler(UnhandledExceptionHandler handler)
     {
-        ValidateHandler(handler);
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        const EventToken token = impl_->NextEventToken();
-        auto handle = impl_->unhandledExceptionHandlers.append(std::move(handler));
-
-        try
-        {
-            impl_->unhandledExceptionHandlerSubscriptions.emplace(token.value_, handle);
-        }
-        catch (...)
-        {
-            const bool removed = impl_->unhandledExceptionHandlers.remove(handle);
-            assert(removed);
-            throw;
-        }
-
-        return token;
+        return impl_->eventSubscriptions.Subscribe(impl_->unhandledExceptionHandlers, impl_->unhandledExceptionHandlerSubscriptions, std::move(handler));
     }
 
     bool Dispatcher::UnsubscribeUnhandledExceptionHandler(EventToken token)
     {
-        if (!token || token.ownerId_ != impl_->eventOwnerId)
-            return false;
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        auto& subscriptions = impl_->unhandledExceptionHandlerSubscriptions;
-        const auto iterator = subscriptions.find(token.value_);
-
-        if (iterator == subscriptions.end())
-            return false;
-
-        const bool removed = impl_->unhandledExceptionHandlers.remove(iterator->second);
-        assert(removed);
-
-        subscriptions.erase(iterator);
-        return removed;
+        return impl_->eventSubscriptions.Unsubscribe(impl_->unhandledExceptionHandlers, impl_->unhandledExceptionHandlerSubscriptions, token);
     }
 }

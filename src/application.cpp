@@ -3,7 +3,7 @@
 #include <photinox/window.hpp>
 #include "native/library.hpp"
 
-#include "event_token.internal.hpp"
+#include "event_subscription.internal.hpp"
 
 #include <eventpp/callbacklist.h>
 
@@ -13,7 +13,6 @@
 #include <climits>
 #include <cstdint>
 #include <exception>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -37,13 +36,6 @@ namespace photinox
                 default:
                     return false;
             }
-        }
-
-        template<typename THandler>
-        void ValidateHandler(const THandler& handler)
-        {
-            if (!handler)
-                throw std::invalid_argument("handler");
         }
     } // namespace
 
@@ -82,9 +74,7 @@ namespace photinox
         NotificationDismissedHandlerList notificationDismissedHandlers;
         NotificationFailedHandlerList notificationFailedHandlers;
 
-        std::mutex eventSubscriptionsMutex;
-        const std::uint64_t eventOwnerId = NextEventOwnerId();
-        std::uint64_t nextEventToken = 1;
+        EventSubscriptionRegistry eventSubscriptions;
 
         std::unordered_map<std::uint64_t, StartupHandlerList::Handle> startupHandlerSubscriptions;
         std::unordered_map<std::uint64_t, ShutdownRequestedHandlerList::Handle> shutdownRequestedHandlerSubscriptions;
@@ -108,17 +98,6 @@ namespace photinox
 
         std::unordered_map<int, std::unique_ptr<NotificationState>> notificationStates;
         int nextNotificationId = 0;
-
-        [[nodiscard]] EventToken NextEventToken() noexcept
-        {
-            do
-            {
-                ++nextEventToken;
-            }
-            while (nextEventToken == 0);
-
-            return EventToken(eventOwnerId, nextEventToken);
-        }
 
         void SetCallbackException(std::exception_ptr exception) noexcept
         {
@@ -728,6 +707,7 @@ namespace photinox
                     callbackState = notificationState.get();
 
                     const auto [_, inserted] = impl_->notificationStates.emplace(notificationId, std::move(notificationState));
+                    assert(inserted);
 
                     if (!inserted)
                         return -1;
@@ -751,403 +731,149 @@ namespace photinox
             });
     }
 
+    // Event subscription methods
+
+    // Startup Handlers
+
     Application& Application::RegisterStartupHandler(StartupHandler handler)
     {
-        ValidateHandler(handler);
-        impl_->startupHandlers.append(std::move(handler));
+        RegisterEventHandler(impl_->startupHandlers, std::move(handler));
         return *this;
     }
 
     EventToken Application::SubscribeStartupHandler(StartupHandler handler)
     {
-        ValidateHandler(handler);
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        const EventToken token = impl_->NextEventToken();
-        auto handle = impl_->startupHandlers.append(std::move(handler));
-
-        try
-        {
-            impl_->startupHandlerSubscriptions.emplace(token.value_, handle);
-        }
-        catch (...)
-        {
-            const bool removed = impl_->startupHandlers.remove(handle);
-            assert(removed);
-            throw;
-        }
-
-        return token;
+        return impl_->eventSubscriptions.Subscribe(impl_->startupHandlers, impl_->startupHandlerSubscriptions, std::move(handler));
     }
 
     bool Application::UnsubscribeStartupHandler(EventToken token)
     {
-        if (!token || token.ownerId_ != impl_->eventOwnerId)
-            return false;
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        auto& subscriptions = impl_->startupHandlerSubscriptions;
-        const auto iterator = subscriptions.find(token.value_);
-
-        if (iterator == subscriptions.end())
-            return false;
-
-        const bool removed = impl_->startupHandlers.remove(iterator->second);
-        assert(removed);
-
-        subscriptions.erase(iterator);
-        return removed;
+        return impl_->eventSubscriptions.Unsubscribe(impl_->startupHandlers, impl_->startupHandlerSubscriptions, token);
     }
+
+    // Shutdown Requested Handlers
 
     Application& Application::RegisterShutdownRequestedHandler(ShutdownRequestedHandler handler)
     {
-        ValidateHandler(handler);
-        impl_->shutdownRequestedHandlers.append(std::move(handler));
+        RegisterEventHandler(impl_->shutdownRequestedHandlers, std::move(handler));
         return *this;
     }
 
     EventToken Application::SubscribeShutdownRequestedHandler(ShutdownRequestedHandler handler)
     {
-        ValidateHandler(handler);
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        const EventToken token = impl_->NextEventToken();
-        auto handle = impl_->shutdownRequestedHandlers.append(std::move(handler));
-
-        try
-        {
-            impl_->shutdownRequestedHandlerSubscriptions.emplace(token.value_, handle);
-        }
-        catch (...)
-        {
-            const bool removed = impl_->shutdownRequestedHandlers.remove(handle);
-            assert(removed);
-            throw;
-        }
-
-        return token;
+        return impl_->eventSubscriptions.Subscribe(impl_->shutdownRequestedHandlers, impl_->shutdownRequestedHandlerSubscriptions, std::move(handler));
     }
 
     bool Application::UnsubscribeShutdownRequestedHandler(EventToken token)
     {
-        if (!token || token.ownerId_ != impl_->eventOwnerId)
-            return false;
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        auto& subscriptions = impl_->shutdownRequestedHandlerSubscriptions;
-        const auto iterator = subscriptions.find(token.value_);
-
-        if (iterator == subscriptions.end())
-            return false;
-
-        const bool removed = impl_->shutdownRequestedHandlers.remove(iterator->second);
-        assert(removed);
-
-        subscriptions.erase(iterator);
-        return removed;
+        return impl_->eventSubscriptions.Unsubscribe(impl_->shutdownRequestedHandlers, impl_->shutdownRequestedHandlerSubscriptions, token);
     }
+
+    // Exit Handlers
 
     Application& Application::RegisterExitHandler(ExitHandler handler)
     {
-        ValidateHandler(handler);
-        impl_->exitHandlers.append(std::move(handler));
+        RegisterEventHandler(impl_->exitHandlers, std::move(handler));
         return *this;
     }
 
     EventToken Application::SubscribeExitHandler(ExitHandler handler)
     {
-        ValidateHandler(handler);
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        const EventToken token = impl_->NextEventToken();
-        auto handle = impl_->exitHandlers.append(std::move(handler));
-
-        try
-        {
-            impl_->exitHandlerSubscriptions.emplace(token.value_, handle);
-        }
-        catch (...)
-        {
-            const bool removed = impl_->exitHandlers.remove(handle);
-            assert(removed);
-            throw;
-        }
-
-        return token;
+        return impl_->eventSubscriptions.Subscribe(impl_->exitHandlers, impl_->exitHandlerSubscriptions, std::move(handler));
     }
 
     bool Application::UnsubscribeExitHandler(EventToken token)
     {
-        if (!token || token.ownerId_ != impl_->eventOwnerId)
-            return false;
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        auto& subscriptions = impl_->exitHandlerSubscriptions;
-        const auto iterator = subscriptions.find(token.value_);
-
-        if (iterator == subscriptions.end())
-            return false;
-
-        const bool removed = impl_->exitHandlers.remove(iterator->second);
-        assert(removed);
-
-        subscriptions.erase(iterator);
-        return removed;
+        return impl_->eventSubscriptions.Unsubscribe(impl_->exitHandlers, impl_->exitHandlerSubscriptions, token);
     }
+
+    // Notification Activated Handlers
 
     Application& Application::RegisterNotificationActivatedHandler(NotificationActivatedHandler handler)
     {
-        ValidateHandler(handler);
-        impl_->notificationActivatedHandlers.append(std::move(handler));
+        RegisterEventHandler(impl_->notificationActivatedHandlers, std::move(handler));
         return *this;
     }
 
     EventToken Application::SubscribeNotificationActivatedHandler(NotificationActivatedHandler handler)
     {
-        ValidateHandler(handler);
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        const EventToken token = impl_->NextEventToken();
-        auto handle = impl_->notificationActivatedHandlers.append(std::move(handler));
-
-        try
-        {
-            impl_->notificationActivatedHandlerSubscriptions.emplace(token.value_, handle);
-        }
-        catch (...)
-        {
-            const bool removed = impl_->notificationActivatedHandlers.remove(handle);
-            assert(removed);
-            throw;
-        }
-
-        return token;
+        return impl_->eventSubscriptions.Subscribe(impl_->notificationActivatedHandlers, impl_->notificationActivatedHandlerSubscriptions, std::move(handler));
     }
 
     bool Application::UnsubscribeNotificationActivatedHandler(EventToken token)
     {
-        if (!token || token.ownerId_ != impl_->eventOwnerId)
-            return false;
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        auto& subscriptions = impl_->notificationActivatedHandlerSubscriptions;
-        const auto iterator = subscriptions.find(token.value_);
-
-        if (iterator == subscriptions.end())
-            return false;
-
-        const bool removed = impl_->notificationActivatedHandlers.remove(iterator->second);
-        assert(removed);
-
-        subscriptions.erase(iterator);
-        return removed;
+        return impl_->eventSubscriptions.Unsubscribe(impl_->notificationActivatedHandlers, impl_->notificationActivatedHandlerSubscriptions, token);
     }
+
+    // Notification Action Activated Handlers
 
     Application& Application::RegisterNotificationActionActivatedHandler(NotificationActionActivatedHandler handler)
     {
-        ValidateHandler(handler);
-        impl_->notificationActionActivatedHandlers.append(std::move(handler));
+        RegisterEventHandler(impl_->notificationActionActivatedHandlers, std::move(handler));
         return *this;
     }
 
     EventToken Application::SubscribeNotificationActionActivatedHandler(NotificationActionActivatedHandler handler)
     {
-        ValidateHandler(handler);
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        const EventToken token = impl_->NextEventToken();
-        auto handle = impl_->notificationActionActivatedHandlers.append(std::move(handler));
-
-        try
-        {
-            impl_->notificationActionActivatedHandlerSubscriptions.emplace(token.value_, handle);
-        }
-        catch (...)
-        {
-            const bool removed = impl_->notificationActionActivatedHandlers.remove(handle);
-            assert(removed);
-            throw;
-        }
-
-        return token;
+        return impl_->eventSubscriptions.Subscribe(impl_->notificationActionActivatedHandlers, impl_->notificationActionActivatedHandlerSubscriptions, std::move(handler));
     }
 
     bool Application::UnsubscribeNotificationActionActivatedHandler(EventToken token)
     {
-        if (!token || token.ownerId_ != impl_->eventOwnerId)
-            return false;
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        auto& subscriptions = impl_->notificationActionActivatedHandlerSubscriptions;
-        const auto iterator = subscriptions.find(token.value_);
-
-        if (iterator == subscriptions.end())
-            return false;
-
-        const bool removed = impl_->notificationActionActivatedHandlers.remove(iterator->second);
-        assert(removed);
-
-        subscriptions.erase(iterator);
-        return removed;
+        return impl_->eventSubscriptions.Unsubscribe(impl_->notificationActionActivatedHandlers, impl_->notificationActionActivatedHandlerSubscriptions, token);
     }
+
+    // Notification Input Activated Handlers
 
     Application& Application::RegisterNotificationInputActivatedHandler(NotificationInputActivatedHandler handler)
     {
-        ValidateHandler(handler);
-        impl_->notificationInputActivatedHandlers.append(std::move(handler));
+        RegisterEventHandler(impl_->notificationInputActivatedHandlers, std::move(handler));
         return *this;
     }
 
     EventToken Application::SubscribeNotificationInputActivatedHandler(NotificationInputActivatedHandler handler)
     {
-        ValidateHandler(handler);
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        const EventToken token = impl_->NextEventToken();
-        auto handle = impl_->notificationInputActivatedHandlers.append(std::move(handler));
-
-        try
-        {
-            impl_->notificationInputActivatedHandlerSubscriptions.emplace(token.value_, handle);
-        }
-        catch (...)
-        {
-            const bool removed = impl_->notificationInputActivatedHandlers.remove(handle);
-            assert(removed);
-            throw;
-        }
-
-        return token;
+        return impl_->eventSubscriptions.Subscribe(impl_->notificationInputActivatedHandlers, impl_->notificationInputActivatedHandlerSubscriptions, std::move(handler));
     }
 
     bool Application::UnsubscribeNotificationInputActivatedHandler(EventToken token)
     {
-        if (!token || token.ownerId_ != impl_->eventOwnerId)
-            return false;
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        auto& subscriptions = impl_->notificationInputActivatedHandlerSubscriptions;
-        const auto iterator = subscriptions.find(token.value_);
-
-        if (iterator == subscriptions.end())
-            return false;
-
-        const bool removed = impl_->notificationInputActivatedHandlers.remove(iterator->second);
-        assert(removed);
-
-        subscriptions.erase(iterator);
-        return removed;
+        return impl_->eventSubscriptions.Unsubscribe(impl_->notificationInputActivatedHandlers, impl_->notificationInputActivatedHandlerSubscriptions, token);
     }
+
+    // Notification Dismissed Handlers
 
     Application& Application::RegisterNotificationDismissedHandler(NotificationDismissedHandler handler)
     {
-        ValidateHandler(handler);
-        impl_->notificationDismissedHandlers.append(std::move(handler));
+        RegisterEventHandler(impl_->notificationDismissedHandlers, std::move(handler));
         return *this;
     }
 
     EventToken Application::SubscribeNotificationDismissedHandler(NotificationDismissedHandler handler)
     {
-        ValidateHandler(handler);
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        const EventToken token = impl_->NextEventToken();
-        auto handle = impl_->notificationDismissedHandlers.append(std::move(handler));
-
-        try
-        {
-            impl_->notificationDismissedHandlerSubscriptions.emplace(token.value_, handle);
-        }
-        catch (...)
-        {
-            const bool removed = impl_->notificationDismissedHandlers.remove(handle);
-            assert(removed);
-            throw;
-        }
-
-        return token;
+        return impl_->eventSubscriptions.Subscribe(impl_->notificationDismissedHandlers, impl_->notificationDismissedHandlerSubscriptions, std::move(handler));
     }
 
     bool Application::UnsubscribeNotificationDismissedHandler(EventToken token)
     {
-        if (!token || token.ownerId_ != impl_->eventOwnerId)
-            return false;
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        auto& subscriptions = impl_->notificationDismissedHandlerSubscriptions;
-        const auto iterator = subscriptions.find(token.value_);
-
-        if (iterator == subscriptions.end())
-            return false;
-
-        const bool removed = impl_->notificationDismissedHandlers.remove(iterator->second);
-        assert(removed);
-
-        subscriptions.erase(iterator);
-        return removed;
+        return impl_->eventSubscriptions.Unsubscribe(impl_->notificationDismissedHandlers, impl_->notificationDismissedHandlerSubscriptions, token);
     }
+
+    // Notification Failed Handlers
 
     Application& Application::RegisterNotificationFailedHandler(NotificationFailedHandler handler)
     {
-        ValidateHandler(handler);
-        impl_->notificationFailedHandlers.append(std::move(handler));
+        RegisterEventHandler(impl_->notificationFailedHandlers, std::move(handler));
         return *this;
     }
 
     EventToken Application::SubscribeNotificationFailedHandler(NotificationFailedHandler handler)
     {
-        ValidateHandler(handler);
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        const EventToken token = impl_->NextEventToken();
-        auto handle = impl_->notificationFailedHandlers.append(std::move(handler));
-
-        try
-        {
-            impl_->notificationFailedHandlerSubscriptions.emplace(token.value_, handle);
-        }
-        catch (...)
-        {
-            const bool removed = impl_->notificationFailedHandlers.remove(handle);
-            assert(removed);
-            throw;
-        }
-
-        return token;
+        return impl_->eventSubscriptions.Subscribe(impl_->notificationFailedHandlers, impl_->notificationFailedHandlerSubscriptions, std::move(handler));
     }
 
     bool Application::UnsubscribeNotificationFailedHandler(EventToken token)
     {
-        if (!token || token.ownerId_ != impl_->eventOwnerId)
-            return false;
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        auto& subscriptions = impl_->notificationFailedHandlerSubscriptions;
-        const auto iterator = subscriptions.find(token.value_);
-
-        if (iterator == subscriptions.end())
-            return false;
-
-        const bool removed = impl_->notificationFailedHandlers.remove(iterator->second);
-        assert(removed);
-
-        subscriptions.erase(iterator);
-        return removed;
+        return impl_->eventSubscriptions.Unsubscribe(impl_->notificationFailedHandlers, impl_->notificationFailedHandlerSubscriptions, token);
     }
 }

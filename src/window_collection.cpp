@@ -3,7 +3,7 @@
 #include <photinox/application.hpp>
 #include <photinox/window.hpp>
 
-#include "event_token.internal.hpp"
+#include "event_subscription.internal.hpp"
 
 #include <eventpp/callbacklist.h>
 
@@ -11,21 +11,11 @@
 #include <cassert>
 #include <cstdint>
 #include <mutex>
-#include <stdexcept>
 #include <unordered_map>
 #include <utility>
 
 namespace photinox
 {
-    namespace
-    {
-        void ValidateHandler(const WindowCollectionChangedHandler& handler)
-        {
-            if (!handler)
-                throw std::invalid_argument("handler");
-        }
-    }
-
     class WindowCollection::Impl final
     {
     public:
@@ -39,32 +29,19 @@ namespace photinox
         mutable std::mutex windowsMutex;
         std::vector<Window*> windows;
 
-        using ChangedHandlerList = eventpp::CallbackList<void(const WindowCollectionChangedEventArgs&)>;
+        using CollectionChangedHandlerList = eventpp::CallbackList<void(const WindowCollectionChangedEventArgs&)>;
 
-        ChangedHandlerList changedHandlers;
+        CollectionChangedHandlerList collectionChangedHandlers;
 
-        std::mutex eventSubscriptionsMutex;
-        const std::uint64_t eventOwnerId = NextEventOwnerId();
-        std::uint64_t nextEventToken = 1;
+        EventSubscriptionRegistry eventSubscriptions;
 
-        std::unordered_map<std::uint64_t, ChangedHandlerList::Handle> changedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, CollectionChangedHandlerList::Handle> collectionChangedHandlerSubscriptions;
 
-        [[nodiscard]] EventToken NextEventToken() noexcept
-        {
-            do
-            {
-                ++nextEventToken;
-            }
-            while (nextEventToken == 0);
-
-            return EventToken(eventOwnerId, nextEventToken);
-        }
-
-        void RaiseChanged(const WindowCollectionChangedEventArgs& args) noexcept
+        void RaiseCollectionChanged(const WindowCollectionChangedEventArgs& args) noexcept
         {
             try
             {
-                changedHandlers(args);
+                collectionChangedHandlers(args);
             }
             catch (...)
             {
@@ -104,56 +81,6 @@ namespace photinox
         return impl_->windows;
     }
 
-    WindowCollection& WindowCollection::RegisterChangedHandler(WindowCollectionChangedHandler handler)
-    {
-        ValidateHandler(handler);
-        impl_->changedHandlers.append(std::move(handler));
-        return *this;
-    }
-
-    EventToken WindowCollection::SubscribeChangedHandler(WindowCollectionChangedHandler handler)
-    {
-        ValidateHandler(handler);
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        const EventToken token = impl_->NextEventToken();
-        auto handle = impl_->changedHandlers.append(std::move(handler));
-
-        try
-        {
-            impl_->changedHandlerSubscriptions.emplace(token.value_, handle);
-        }
-        catch (...)
-        {
-            const bool removed = impl_->changedHandlers.remove(handle);
-            assert(removed);
-            throw;
-        }
-
-        return token;
-    }
-
-    bool WindowCollection::UnsubscribeChangedHandler(EventToken token)
-    {
-        if (!token || token.ownerId_ != impl_->eventOwnerId)
-            return false;
-
-        std::lock_guard lock(impl_->eventSubscriptionsMutex);
-
-        auto& subscriptions = impl_->changedHandlerSubscriptions;
-        const auto iterator = subscriptions.find(token.value_);
-
-        if (iterator == subscriptions.end())
-            return false;
-
-        const bool removed = impl_->changedHandlers.remove(iterator->second);
-        assert(removed);
-
-        subscriptions.erase(iterator);
-        return removed;
-    }
-
     void WindowCollection::Add(Window& window)
     {
         Window* item = &window;
@@ -189,7 +116,7 @@ namespace photinox
             .oldItems = {}
         };
 
-        impl_->RaiseChanged(args);
+        impl_->RaiseCollectionChanged(args);
     }
 
     bool WindowCollection::Remove(Window& window)
@@ -214,7 +141,7 @@ namespace photinox
             .oldItems = std::span<Window* const>(&item, 1)
         };
 
-        impl_->RaiseChanged(args);
+        impl_->RaiseCollectionChanged(args);
         return true;
     }
 
@@ -247,6 +174,26 @@ namespace photinox
             .oldItems = windows
         };
 
-        impl_->RaiseChanged(args);
+        impl_->RaiseCollectionChanged(args);
+    }
+
+    // Event subscription methods
+
+    // Collection Changed Handlers
+
+    WindowCollection& WindowCollection::RegisterCollectionChangedHandler(WindowCollectionChangedHandler handler)
+    {
+        RegisterEventHandler(impl_->collectionChangedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken WindowCollection::SubscribeCollectionChangedHandler(WindowCollectionChangedHandler handler)
+    {
+        return impl_->eventSubscriptions.Subscribe(impl_->collectionChangedHandlers, impl_->collectionChangedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool WindowCollection::UnsubscribeCollectionChangedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->collectionChangedHandlers, impl_->collectionChangedHandlerSubscriptions, token);
     }
 }

@@ -138,7 +138,7 @@ int main()
         std::cout << "ShowNotification result: " << notificationId << '\n';
     });
 
-    application.Windows().RegisterChangedHandler(
+    application.Windows().RegisterCollectionChangedHandler(
     [](const WindowCollectionChangedEventArgs& args)
     {
         if (args.action == NotifyCollectionChangedAction::Add)
