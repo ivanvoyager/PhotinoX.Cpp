@@ -404,7 +404,7 @@ namespace photinox
             }
         }
 
-    };
+    }; // class Application::Impl
 
     Application::Application()
     {
@@ -435,16 +435,14 @@ namespace photinox
         g_applicationCreated.store(false, std::memory_order_release);
     }
 
+    // Properties
+
     native::Library& Application::NativeLibrary() noexcept
     {
         return impl_->library;
     }
 
-    void Application::ThrowIfRunning(std::string_view memberName) const
-    {
-        if (IsRunning())
-            throw std::logic_error(std::string(memberName) + " cannot be used after the application has started.");
-    }
+    // Name
 
     std::string_view Application::Name() const noexcept
     {
@@ -459,6 +457,8 @@ namespace photinox
         return *this;
     }
 
+    // IconPath
+
     std::string_view Application::IconPath() const noexcept
     {
         return impl_->iconPath;
@@ -471,6 +471,8 @@ namespace photinox
         impl_->iconPath = iconPath;
         return *this;
     }
+
+    // NotificationsEnabled
 
     bool Application::NotificationsEnabled() const
     {
@@ -497,6 +499,8 @@ namespace photinox
         return *this;
     }
 
+    // NotificationRegistrationId
+
     std::string_view Application::NotificationRegistrationId() const noexcept
     {
         return impl_->notificationRegistrationId;
@@ -510,6 +514,7 @@ namespace photinox
         return *this;
     }
 
+    // ShutdownMode
 
     ShutdownMode Application::GetShutdownMode() const noexcept
     {
@@ -527,6 +532,8 @@ namespace photinox
         impl_->shutdownMode = shutdownMode;
         return *this;
     }
+
+    // Getters
 
     Window* Application::MainWindow() const noexcept
     {
@@ -567,6 +574,14 @@ namespace photinox
     const Dispatcher& Application::GetDispatcher() const noexcept
     {
         return *impl_->dispatcher;
+    }
+
+    // Methods
+
+    void Application::ThrowIfRunning(std::string_view memberName) const
+    {
+        if (IsRunning())
+            throw std::logic_error(std::string(memberName) + " cannot be used after the application has started.");
     }
 
     int Application::Run(Window* mainWindow)

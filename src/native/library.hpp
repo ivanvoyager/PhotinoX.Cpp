@@ -6,6 +6,8 @@
 #include "notification.hpp"
 #include "window.hpp"
 
+#include <string>
+
 namespace photinox::native
 {
     class Library final
@@ -21,6 +23,9 @@ namespace photinox::native
         Library& operator=(Library&&) = delete;
 
         [[nodiscard]] const char* GetVersion() const noexcept;
+
+        //memory
+        void FreeString(char* value) const noexcept;
 
         //application
         [[nodiscard]] int ApplicationRun(const ApplicationInitParams* initParams) const;
@@ -39,6 +44,12 @@ namespace photinox::native
         [[nodiscard]] bool WindowShow(void* instance) const;
         void WindowClose(void* instance) const noexcept;
 
+        [[nodiscard]] std::string WindowGetTitle(void* instance) const;
+        void WindowSetTitle(void* instance, const char* title) const noexcept;
+
+        //browser
+        void WindowNavigateToString(void* instance, const char* content) const noexcept;
+
     private:
         template<typename T>
         [[nodiscard]] T LoadExport(const char* name) const;
@@ -46,6 +57,9 @@ namespace photinox::native
         void* handle_ = nullptr;
 
         const char* (*getVersion_)() = nullptr;
+
+        //memory
+        void (*freeString_)(char*) = nullptr;
 
         //application
         int (*applicationRun_)(const ApplicationInitParams*) = nullptr;
@@ -63,5 +77,11 @@ namespace photinox::native
         void* (*windowCreate_)(WindowInitParams*) = nullptr;
         bool (*windowShow_)(void*) = nullptr;
         void (*windowClose_)(void*) = nullptr;
+
+        char* (*windowGetTitle_)(void*) = nullptr;
+        void (*windowSetTitle_)(void*, const char*) = nullptr;
+
+        //browser
+        void (*windowNavigateToString_)(void*, const char*) = nullptr;
     };
 }

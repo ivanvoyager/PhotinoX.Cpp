@@ -104,6 +104,7 @@ namespace photinox
         std::unique_ptr<Impl> impl_;
 
         [[nodiscard]] native::Library& NativeLibrary() noexcept;
+
         void ThrowIfRunning(std::string_view memberName) const;
 
         void CloseWindows();

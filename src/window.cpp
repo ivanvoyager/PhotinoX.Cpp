@@ -192,7 +192,7 @@ namespace photinox
 
             impl.application.OnWindowClosed(window);
         }
-    };
+    }; // class Window::Impl
 
     Window::Window(Application& application, Window* parent)
         : impl_(std::make_unique<Impl>(application, parent))
@@ -208,14 +208,37 @@ namespace photinox
             std::terminate();
     }
 
-    void Window::InternalClose()
-    {
-        if (!impl_->nativeInstance || impl_->isClosed)
-            return;
+    // Properties
 
-        impl_->forceClose = true;
-        Close();
+    // Title
+
+    std::string_view Window::Title() const noexcept
+    {
+        return impl_->title;
     }
+
+    Window& Window::SetTitle(std::string_view title)
+    {
+        impl_->ThrowIfClosed("SetTitle");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->title = title;
+            return *this;
+        }
+
+        impl_->title = impl_->application.GetDispatcher().Invoke([this, title = std::string(title)]
+        {
+            auto& library = impl_->application.NativeLibrary();
+
+            library.WindowSetTitle(impl_->nativeInstance, title.c_str());
+            return library.WindowGetTitle(impl_->nativeInstance);
+        });
+
+        return *this;
+    }
+
+    // Getters
 
     bool Window::IsInitialized() const noexcept
     {
@@ -237,29 +260,32 @@ namespace photinox
         return impl_->parent;
     }
 
-    Window& Window::SetTitle(std::string_view title)
+    // Methods
+
+    void Window::InternalClose()
     {
-        impl_->ThrowIfClosed("SetTitle");
+        if (!impl_->nativeInstance || impl_->isClosed)
+            return;
 
-        if (impl_->nativeInstance)
-        {
-            throw std::logic_error("SetTitle can currently only be called before the window is initialized.");
-        }
-
-        impl_->title = title;
-        return *this;
+        impl_->forceClose = true;
+        Close();
     }
 
     Window& Window::LoadString(std::string_view content)
     {
         impl_->ThrowIfClosed("LoadString");
 
-        if (impl_->nativeInstance)
+        if (!impl_->nativeInstance)
         {
-            throw std::logic_error("LoadString can currently only be called before the window is initialized.");
+            impl_->startString = content;
+            return *this;
         }
 
-        impl_->startString = content;
+        impl_->application.GetDispatcher().Invoke([this, content = std::string(content)]
+        {
+            impl_->application.NativeLibrary().WindowNavigateToString(impl_->nativeInstance, content.c_str());
+        });
+
         return *this;
     }
 

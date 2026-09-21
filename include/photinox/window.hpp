@@ -22,13 +22,15 @@ namespace photinox
         Window(Window&&) = delete;
         Window& operator=(Window&&) = delete;
 
+        [[nodiscard]] std::string_view Title() const noexcept;
+        Window& SetTitle(std::string_view title);
+
         [[nodiscard]] bool IsInitialized() const noexcept;
         [[nodiscard]] bool IsClosed() const noexcept;
 
         [[nodiscard]] Application& GetApplication() const noexcept;
         [[nodiscard]] Window* Parent() const noexcept;
 
-        Window& SetTitle(std::string_view title);
         Window& LoadString(std::string_view content);
 
         void Show();

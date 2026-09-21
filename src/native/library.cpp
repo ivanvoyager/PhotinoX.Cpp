@@ -55,6 +55,9 @@ namespace photinox::native
         {
             getVersion_ = LoadExport<decltype(getVersion_)>("Photino_GetNativeVersion");
 
+            //memory
+            freeString_ = LoadExport<decltype(freeString_)>("Photino_FreeString");
+
             //application
             applicationRun_ = LoadExport<decltype(applicationRun_)>("PhotinoApplication_Run");
             applicationShutdown_ = LoadExport<decltype(applicationShutdown_)>("PhotinoApplication_Shutdown");
@@ -73,6 +76,12 @@ namespace photinox::native
             windowCreate_ = LoadExport<decltype(windowCreate_)>("Photino_ctor");
             windowShow_ = LoadExport<decltype(windowShow_)>("Photino_Show");
             windowClose_ = LoadExport<decltype(windowClose_)>("Photino_Close");
+
+            windowGetTitle_ = LoadExport<decltype(windowGetTitle_)>("Photino_GetTitle");
+            windowSetTitle_ = LoadExport<decltype(windowSetTitle_)>("Photino_SetTitle");
+
+            //browser
+            windowNavigateToString_ = LoadExport<decltype(windowNavigateToString_)>("Photino_NavigateToString");
         }
         catch (...)
         {
@@ -92,6 +101,14 @@ namespace photinox::native
     const char* Library::GetVersion() const noexcept
     {
         return getVersion_();
+    }
+
+    //memory
+
+    void Library::FreeString(char* value) const noexcept
+    {
+        if (value)
+            freeString_(value);
     }
 
     //application
@@ -165,5 +182,37 @@ namespace photinox::native
     void Library::WindowClose(void* instance) const noexcept
     {
         windowClose_(instance);
+    }
+
+    std::string Library::WindowGetTitle(void* instance) const
+    {
+        char* value = windowGetTitle_(instance);
+
+        if (!value)
+            return {};
+
+        try
+        {
+            std::string result(value);
+            FreeString(value);
+            return result;
+        }
+        catch (...)
+        {
+            FreeString(value);
+            throw;
+        }
+    }
+
+    void Library::WindowSetTitle(void* instance, const char* title) const noexcept
+    {
+        windowSetTitle_(instance, title);
+    }
+
+    // browser
+
+    void Library::WindowNavigateToString(void* instance, const char* content) const noexcept
+    {
+        windowNavigateToString_(instance, content);
     }
 }
