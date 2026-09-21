@@ -109,12 +109,15 @@ namespace photinox
         std::unordered_map<int, std::unique_ptr<NotificationState>> notificationStates;
         int nextNotificationId = 0;
 
-        [[nodiscard]] EventToken NextEventToken()
+        [[nodiscard]] EventToken NextEventToken() noexcept
         {
-            if (nextEventToken == 0)
-                throw std::overflow_error("Application event token limit has been reached.");
+            do
+            {
+                ++nextEventToken;
+            }
+            while (nextEventToken == 0);
 
-            return EventToken(eventOwnerId, nextEventToken++);
+            return EventToken(eventOwnerId, nextEventToken);
         }
 
         void SetCallbackException(std::exception_ptr exception) noexcept
@@ -279,7 +282,7 @@ namespace photinox
                                 windows.push_back(window);
                         }
 
-                        impl.windows->Add(windows);
+                        impl.windows->AddRange(windows);
                         break;
                     }
 
@@ -297,7 +300,7 @@ namespace photinox
                                 windows.push_back(window);
                         }
 
-                        impl.windows->Remove(windows);
+                        impl.windows->RemoveRange(windows);
                         break;
                     }
 
@@ -654,8 +657,7 @@ namespace photinox
 
         assert(!impl_->windows->Contains(window));
 
-        Window* item = &window;
-        impl_->windows->Add(std::span<Window* const>(&item, 1));
+        impl_->windows->Add(window);
     }
 
     void Application::OnWindowClosed(Window& window)

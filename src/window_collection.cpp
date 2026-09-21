@@ -49,12 +49,15 @@ namespace photinox
 
         std::unordered_map<std::uint64_t, ChangedHandlerList::Handle> changedHandlerSubscriptions;
 
-        [[nodiscard]] EventToken NextEventToken()
+        [[nodiscard]] EventToken NextEventToken() noexcept
         {
-            if (nextEventToken == 0)
-                throw std::overflow_error("Window collection event token limit has been reached.");
+            do
+            {
+                ++nextEventToken;
+            }
+            while (nextEventToken == 0);
 
-            return EventToken(eventOwnerId, nextEventToken++);
+            return EventToken(eventOwnerId, nextEventToken);
         }
 
         void RaiseChanged(const WindowCollectionChangedEventArgs& args) noexcept
@@ -151,7 +154,13 @@ namespace photinox
         return removed;
     }
 
-    void WindowCollection::Add(std::span<Window* const> windows)
+    void WindowCollection::Add(Window& window)
+    {
+        Window* item = &window;
+        AddRange(std::span<Window* const>(&item, 1));
+    }
+
+    void WindowCollection::AddRange(std::span<Window* const> windows)
     {
         if (windows.empty())
             return;
@@ -183,7 +192,33 @@ namespace photinox
         impl_->RaiseChanged(args);
     }
 
-    void WindowCollection::Remove(std::span<Window* const> windows)
+    bool WindowCollection::Remove(Window& window)
+    {
+        {
+            std::lock_guard lock(impl_->windowsMutex);
+
+            const auto iterator = std::find(impl_->windows.begin(), impl_->windows.end(), &window);
+
+            if (iterator == impl_->windows.end())
+                return false;
+
+            impl_->windows.erase(iterator);
+        }
+
+        Window* item = &window;
+
+        WindowCollectionChangedEventArgs args
+        {
+            .action = NotifyCollectionChangedAction::Remove,
+            .newItems = {},
+            .oldItems = std::span<Window* const>(&item, 1)
+        };
+
+        impl_->RaiseChanged(args);
+        return true;
+    }
+
+    void WindowCollection::RemoveRange(std::span<Window* const> windows)
     {
         if (windows.empty())
             return;

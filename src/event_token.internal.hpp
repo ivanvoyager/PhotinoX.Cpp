@@ -4,5 +4,5 @@
 
 namespace photinox
 {
-    [[nodiscard]] std::uint64_t NextEventOwnerId();
+    [[nodiscard]] std::uint64_t NextEventOwnerId() noexcept;
 }

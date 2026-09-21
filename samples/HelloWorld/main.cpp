@@ -148,33 +148,5 @@ int main()
             std::cout << "Windows removed: " << args.oldItems.size() << '\n';
     });
 
-    const EventToken token = application.Windows().SubscribeChangedHandler(
-    [](const WindowCollectionChangedEventArgs& args)
-    {
-        std::abort();
-    });
-
-    assert(application.Windows().UnsubscribeChangedHandler(token));
-    assert(!application.Windows().UnsubscribeChangedHandler(token));
-
-    application.GetDispatcher().RegisterUnhandledExceptionHandler(
-    [](std::exception_ptr exception)
-    {
-        try
-        {
-            std::rethrow_exception(exception);
-        }
-        catch (const std::runtime_error& error)
-        {
-            assert(std::string_view(error.what()) == "Collection handler failure.");
-        }
-    });
-
-    application.Windows().RegisterChangedHandler(
-        [](const WindowCollectionChangedEventArgs&)
-        {
-            throw std::runtime_error("Collection handler failure.");
-        });
-
     return application.Run(&window);
 }

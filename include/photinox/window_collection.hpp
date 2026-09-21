@@ -41,7 +41,9 @@ namespace photinox
 
         explicit WindowCollection(Application& application);
 
-        void Add(std::span<Window* const> windows);
-        void Remove(std::span<Window* const> windows);
+        void Add(Window& window);
+        void AddRange(std::span<Window* const> windows);
+        bool Remove(Window& window);
+        void RemoveRange(std::span<Window* const> windows);
     };
 }

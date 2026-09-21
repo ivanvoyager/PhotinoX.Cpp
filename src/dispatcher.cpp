@@ -63,12 +63,15 @@ namespace photinox
 
         std::unordered_map<std::uint64_t, UnhandledExceptionHandlerList::Handle> unhandledExceptionHandlerSubscriptions;
 
-        [[nodiscard]] EventToken NextEventToken()
+        [[nodiscard]] EventToken NextEventToken() noexcept
         {
-            if (nextEventToken == 0)
-                throw std::overflow_error("Dispatcher event token limit has been reached.");
+            do
+            {
+                ++nextEventToken;
+            }
+            while (nextEventToken == 0);
 
-            return EventToken(eventOwnerId, nextEventToken++);
+            return EventToken(eventOwnerId, nextEventToken);
         }
     };
 
