@@ -1,6 +1,7 @@
 #pragma once
 
 #include <photinox/callbacks.hpp>
+#include <photinox/event_token.hpp>
 
 #include <memory>
 #include <string_view>
@@ -30,13 +31,24 @@ namespace photinox
         Window& SetTitle(std::string_view title);
         Window& LoadString(std::string_view content);
 
-        Window& RegisterCreatingHandler(WindowHandler handler);
-        Window& RegisterCreatedHandler(WindowHandler handler);
-        Window& RegisterClosingHandler(ClosingHandler handler);
-        Window& RegisterClosedHandler(WindowHandler handler);
-
         void Show();
         void Close();
+
+        Window& RegisterCreatingHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeCreatingHandler(WindowHandler handler);
+        bool UnsubscribeCreatingHandler(EventToken token);
+
+        Window& RegisterCreatedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeCreatedHandler(WindowHandler handler);
+        bool UnsubscribeCreatedHandler(EventToken token);
+
+        Window& RegisterClosingHandler(ClosingHandler handler);
+        [[nodiscard]] EventToken SubscribeClosingHandler(ClosingHandler handler);
+        bool UnsubscribeClosingHandler(EventToken token);
+
+        Window& RegisterClosedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeClosedHandler(WindowHandler handler);
+        bool UnsubscribeClosedHandler(EventToken token);
 
     private:
         friend class Application;

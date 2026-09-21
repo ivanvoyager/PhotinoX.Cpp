@@ -5,12 +5,16 @@
 #include "native/library.hpp"
 #include "native/window.hpp"
 
+#include "event_subscription.internal.hpp"
+
 #include <eventpp/callbacklist.h>
 
 #include <cassert>
+#include <cstdint>
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 namespace photinox
@@ -32,10 +36,20 @@ namespace photinox
 
         void* nativeInstance = nullptr;
 
-        eventpp::CallbackList<void()> creatingHandlers;
-        eventpp::CallbackList<void()> createdHandlers;
-        eventpp::CallbackList<void(ClosingEventArgs&)> closingHandlers;
-        eventpp::CallbackList<void()> closedHandlers;
+        using WindowHandlerList = eventpp::CallbackList<void()>;
+        using ClosingHandlerList = eventpp::CallbackList<void(ClosingEventArgs&)>;
+
+        WindowHandlerList creatingHandlers;
+        WindowHandlerList createdHandlers;
+        ClosingHandlerList closingHandlers;
+        WindowHandlerList closedHandlers;
+
+        EventSubscriptionRegistry eventSubscriptions;
+
+        std::unordered_map<std::uint64_t, WindowHandlerList::Handle> creatingHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, WindowHandlerList::Handle> createdHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, ClosingHandlerList::Handle> closingHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, WindowHandlerList::Handle> closedHandlerSubscriptions;
 
         bool isCreating = false;
         bool isClosed = false;
@@ -87,6 +101,30 @@ namespace photinox
             return params;
         }
 
+        void ThrowIfClosed(std::string_view memberName) const
+        {
+            if (isClosed)
+                throw std::logic_error(std::string(memberName) + " cannot be called after the window has been closed.");
+        }
+
+        void ThrowIfInitialized(std::string_view memberName) const
+        {
+            if (nativeInstance)
+                throw std::logic_error(std::string(memberName) + " cannot be called after the window has been initialized.");
+        }
+
+        void ThrowIfNotInitialized(std::string_view memberName) const
+        {
+            if (!nativeInstance)
+                throw std::logic_error(std::string(memberName) + " cannot be called before the window is initialized.");
+        }
+
+        void ThrowIfClosedOrNotInitialized(std::string_view memberName) const
+        {
+            ThrowIfClosed(memberName);
+            ThrowIfNotInitialized(memberName);
+        }
+
     private:
 
         static void CreatedCallback(void* instance, bool registered, void* state) noexcept
@@ -107,7 +145,7 @@ namespace photinox
             }
             catch (...)
             {
-                impl.application.Shutdown(-1, true);
+                impl.application.OnUnhandledException(std::current_exception());
             }
         }
 
@@ -127,7 +165,7 @@ namespace photinox
             }
             catch (...)
             {
-                impl.application.Shutdown(-1, true);
+                impl.application.OnUnhandledException(std::current_exception());
                 return false;
             }
         }
@@ -143,16 +181,16 @@ namespace photinox
             impl.isClosed = true;
             impl.forceClose = false;
 
-            impl.application.OnWindowClosed(window);
-
             try
             {
                 impl.closedHandlers();
             }
             catch (...)
             {
-                impl.application.Shutdown(-1, true);
+                impl.application.OnUnhandledException(std::current_exception());
             }
+
+            impl.application.OnWindowClosed(window);
         }
     };
 
@@ -201,8 +239,7 @@ namespace photinox
 
     Window& Window::SetTitle(std::string_view title)
     {
-        if (impl_->isClosed)
-            throw std::logic_error("SetTitle cannot be called after the window has been closed.");
+        impl_->ThrowIfClosed("SetTitle");
 
         if (impl_->nativeInstance)
         {
@@ -215,8 +252,7 @@ namespace photinox
 
     Window& Window::LoadString(std::string_view content)
     {
-        if (impl_->isClosed)
-            throw std::logic_error("LoadString cannot be called after the window has been closed.");
+        impl_->ThrowIfClosed("LoadString");
 
         if (impl_->nativeInstance)
         {
@@ -227,60 +263,9 @@ namespace photinox
         return *this;
     }
 
-    Window& Window::RegisterCreatingHandler(WindowHandler handler)
-    {
-        if (!handler)
-            throw std::invalid_argument("handler");
-
-        if (impl_->isClosed)
-            throw std::logic_error("RegisterCreatingHandler cannot be called after the window has been closed.");
-
-        impl_->creatingHandlers.append(std::move(handler));
-        return *this;
-    }
-
-    Window& Window::RegisterCreatedHandler(WindowHandler handler)
-    {
-        if (!handler)
-            throw std::invalid_argument("handler");
-
-        if (impl_->isClosed)
-            throw std::logic_error("RegisterCreatedHandler cannot be called after the window has been closed.");
-
-        impl_->createdHandlers.append(std::move(handler));
-        return *this;
-    }
-
-    Window& Window::RegisterClosingHandler(ClosingHandler handler)
-    {
-        if (!handler)
-            throw std::invalid_argument("handler");
-
-        if (impl_->isClosed)
-            throw std::logic_error("RegisterClosingHandler cannot be called after the window has been closed.");
-
-        impl_->closingHandlers.append(std::move(handler));
-        return *this;
-    }
-
-    Window& Window::RegisterClosedHandler(WindowHandler handler)
-    {
-        if (!handler)
-            throw std::invalid_argument("handler");
-
-        if (impl_->isClosed)
-            throw std::logic_error("RegisterClosedHandler cannot be called after the window has been closed.");
-
-        impl_->closedHandlers.append(std::move(handler));
-        return *this;
-    }
-
     void Window::Show()
     {
-        if (impl_->isClosed)
-        {
-            throw std::logic_error("Show cannot be called after the window has been closed.");
-        }
+        impl_->ThrowIfClosed("Show");
 
         if (impl_->nativeInstance)
         {
@@ -334,19 +319,93 @@ namespace photinox
 
     void Window::Close()
     {
-        if (impl_->isClosed)
-        {
-            throw std::logic_error("Close cannot be called after the window has been closed.");
-        }
-
-        if (!impl_->nativeInstance)
-        {
-            throw std::logic_error("Close cannot be called before the window is initialized.");
-        }
+        impl_->ThrowIfClosedOrNotInitialized("Close");
 
         impl_->application.GetDispatcher().Invoke([this]
         {
             impl_->application.NativeLibrary().WindowClose(impl_->nativeInstance);
         });
+    }
+
+    // Event subscription methods
+
+    // Creating Handlers
+
+    Window& Window::RegisterCreatingHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterCreatingHandler");
+        RegisterEventHandler(impl_->creatingHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeCreatingHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeCreatingHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->creatingHandlers, impl_->creatingHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeCreatingHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->creatingHandlers, impl_->creatingHandlerSubscriptions, token);
+    }
+
+    // Created Handlers
+
+    Window& Window::RegisterCreatedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterCreatedHandler");
+        RegisterEventHandler(impl_->createdHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeCreatedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeCreatedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->createdHandlers, impl_->createdHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeCreatedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->createdHandlers, impl_->createdHandlerSubscriptions, token);
+    }
+
+    // Closing Handlers
+
+    Window& Window::RegisterClosingHandler(ClosingHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterClosingHandler");
+        RegisterEventHandler(impl_->closingHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeClosingHandler(ClosingHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeClosingHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->closingHandlers, impl_->closingHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeClosingHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->closingHandlers, impl_->closingHandlerSubscriptions, token);
+    }
+
+    // Closed Handlers
+
+    Window& Window::RegisterClosedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterClosedHandler");
+        RegisterEventHandler(impl_->closedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeClosedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeClosedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->closedHandlers, impl_->closedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeClosedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->closedHandlers, impl_->closedHandlerSubscriptions, token);
     }
 }
