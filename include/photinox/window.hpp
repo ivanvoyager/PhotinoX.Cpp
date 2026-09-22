@@ -5,6 +5,7 @@
 #include <photinox/geometry.hpp>
 
 #include <memory>
+#include <string>
 #include <string_view>
 
 namespace photinox
@@ -26,8 +27,11 @@ namespace photinox
 
         // Startup / initialization
 
-        [[nodiscard]] std::string_view Title() const noexcept;
+        [[nodiscard]] std::string Title() const;
         Window& SetTitle(std::string_view title);
+
+        [[nodiscard]] std::string IconFile() const;
+        Window& SetIconFile(std::string_view iconFile);
 
         [[nodiscard]] bool UseOsDefaultSize() const noexcept;
         Window& SetUseOsDefaultSize(bool useDefault);
@@ -37,6 +41,9 @@ namespace photinox
 
         [[nodiscard]] bool CenterOnInitialize() const noexcept;
         Window& SetCenterOnInitialize(bool center);
+
+        [[nodiscard]] bool UseNativeWindowOwner() const noexcept;
+        Window& SetUseNativeWindowOwner(bool useNativeWindowOwner);
 
         // Geometry
 
@@ -81,6 +88,32 @@ namespace photinox
         Window& SetTop(int top);
 
         Window& Center();
+
+        // Window state
+
+        [[nodiscard]] WindowState GetWindowState() const;
+        Window& SetWindowState(WindowState state);
+
+        [[nodiscard]] bool Maximized() const;
+        Window& SetMaximized(bool maximized);
+
+        [[nodiscard]] bool Minimized() const;
+        Window& SetMinimized(bool minimized);
+
+        [[nodiscard]] bool FullScreen() const;
+        Window& SetFullScreen(bool fullScreen);
+
+        [[nodiscard]] bool Resizable() const;
+        Window& SetResizable(bool resizable);
+
+        [[nodiscard]] bool Topmost() const;
+        Window& SetTopmost(bool topmost);
+
+        [[nodiscard]] bool Activate();
+        Window& BringToFront();
+        Window& Maximize();
+        Window& Minimize();
+        Window& Restore();
 
         // Browser
 

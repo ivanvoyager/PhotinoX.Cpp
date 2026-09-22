@@ -44,10 +44,17 @@ namespace photinox::native
         [[nodiscard]] void* WindowCreate(WindowInitParams* initParams) const;
         [[nodiscard]] bool WindowShow(void* instance) const;
         [[nodiscard]] bool WindowCenter(void* instance) const noexcept;
+        [[nodiscard]] bool WindowActivate(void* instance) const noexcept;
+        [[nodiscard]] bool WindowMaximize(void* instance) const noexcept;
+        [[nodiscard]] bool WindowMinimize(void* instance) const noexcept;
+        [[nodiscard]] bool WindowRestore(void* instance) const noexcept;
         void WindowClose(void* instance) const noexcept;
 
         [[nodiscard]] std::string WindowGetTitle(void* instance) const;
         void WindowSetTitle(void* instance, const char* title) const noexcept;
+
+        [[nodiscard]] std::string WindowGetIconFile(void* instance) const;
+        void WindowSetIconFile(void* instance, const char* iconFile) const noexcept;
 
         [[nodiscard]] Point WindowGetPosition(void* instance) const noexcept;
         void WindowSetPosition(void* instance, Point position) const noexcept;
@@ -57,6 +64,24 @@ namespace photinox::native
 
         void WindowSetMinSize(void* instance, Size size) const noexcept;
         void WindowSetMaxSize(void* instance, Size size) const noexcept;
+
+        [[nodiscard]] bool WindowGetFullScreen(void* instance) const noexcept;
+        void WindowSetFullScreen(void* instance, bool fullScreen) const noexcept;
+
+        [[nodiscard]] bool WindowGetMaximized(void* instance) const noexcept;
+        void WindowSetMaximized(void* instance, bool maximized) const noexcept;
+
+        [[nodiscard]] bool WindowGetMinimized(void* instance) const noexcept;
+        void WindowSetMinimized(void* instance, bool minimized) const noexcept;
+
+        [[nodiscard]] WindowState WindowGetState(void* instance) const noexcept;
+        void WindowSetState(void* instance, WindowState state) const noexcept;
+
+        [[nodiscard]] bool WindowGetResizable(void* instance) const noexcept;
+        void WindowSetResizable(void* instance, bool resizable) const noexcept;
+
+        [[nodiscard]] bool WindowGetTopmost(void* instance) const noexcept;
+        void WindowSetTopmost(void* instance, bool topmost) const noexcept;
 
         //browser
         void WindowNavigateToString(void* instance, const char* content) const noexcept;
@@ -88,10 +113,17 @@ namespace photinox::native
         void* (*windowCreate_)(WindowInitParams*) = nullptr;
         bool (*windowShow_)(void*) = nullptr;
         bool (*windowCenter_)(void*) = nullptr;
+        bool (*windowActivate_)(void*) = nullptr;
+        bool (*windowMaximize_)(void*) = nullptr;
+        bool (*windowMinimize_)(void*) = nullptr;
+        bool (*windowRestore_)(void*) = nullptr;
         void (*windowClose_)(void*) = nullptr;
 
         char* (*windowGetTitle_)(void*) = nullptr;
         void (*windowSetTitle_)(void*, const char*) = nullptr;
+
+        char* (*windowGetIconFile_)(void*) = nullptr;
+        void (*windowSetIconFile_)(void*, const char*) = nullptr;
 
         void (*windowGetPosition_)(void*, int*, int*) = nullptr;
         void (*windowSetPosition_)(void*, int, int) = nullptr;
@@ -101,6 +133,24 @@ namespace photinox::native
 
         void (*windowSetMinSize_)(void*, int, int) = nullptr;
         void (*windowSetMaxSize_)(void*, int, int) = nullptr;
+
+        void (*windowGetFullScreen_)(void*, bool*) = nullptr;
+        void (*windowSetFullScreen_)(void*, bool) = nullptr;
+
+        void (*windowGetMaximized_)(void*, bool*) = nullptr;
+        void (*windowSetMaximized_)(void*, bool) = nullptr;
+
+        void (*windowGetMinimized_)(void*, bool*) = nullptr;
+        void (*windowSetMinimized_)(void*, bool) = nullptr;
+
+        void (*windowGetState_)(void*, WindowState*) = nullptr;
+        void (*windowSetState_)(void*, WindowState) = nullptr;
+
+        void (*windowGetResizable_)(void*, bool*) = nullptr;
+        void (*windowSetResizable_)(void*, bool) = nullptr;
+
+        void (*windowGetTopmost_)(void*, bool*) = nullptr;
+        void (*windowSetTopmost_)(void*, bool) = nullptr;
 
         //browser
         void (*windowNavigateToString_)(void*, const char*) = nullptr;

@@ -20,6 +20,23 @@
 
 namespace photinox
 {
+    namespace
+    {
+        bool IsValidWindowState(WindowState state) noexcept
+        {
+            switch (state)
+            {
+                case WindowState::Normal:
+                case WindowState::Minimized:
+                case WindowState::Maximized:
+                case WindowState::FullScreen:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    } // namespace
+
     class Window::Impl final
     {
     public:
@@ -33,6 +50,7 @@ namespace photinox
         Window* parent;
 
         std::string title = "PhotinoX";
+        std::string iconFile;
         std::string startString;
 
         Point location;
@@ -44,9 +62,14 @@ namespace photinox
             .height = std::numeric_limits<int>::max()
         };
 
+        WindowState windowState = WindowState::Normal;
+
+        bool resizable = true;
+        bool topmost = false;
         bool centerOnInitialize = false;
         bool useOsDefaultLocation = true;
         bool useOsDefaultSize = true;
+        bool useNativeWindowOwner = false;
 
         void* nativeInstance = nullptr;
 
@@ -87,6 +110,8 @@ namespace photinox
             params.callbacks.callbackState = window;
 
             params.window.title = title.c_str();
+            params.window.iconFile = iconFile.empty() ? nullptr : iconFile.c_str();
+            params.window.useNativeWindowOwner = useNativeWindowOwner;
 
             params.linuxChromeless.resizeBorderThickness = 8;
 
@@ -98,10 +123,10 @@ namespace photinox
             params.geometry.minHeight = minSize.height;
             params.geometry.maxWidth = maxSize.width;
             params.geometry.maxHeight = maxSize.height;
-            params.geometry.windowState = WindowState::Normal;
+            params.geometry.windowState = windowState;
             params.geometry.centerOnInitialize = centerOnInitialize;
-            params.geometry.resizable = true;
-            params.geometry.topmost = false;
+            params.geometry.resizable = resizable;
+            params.geometry.topmost = topmost;
             params.geometry.useOsDefaultLocation = useOsDefaultLocation;
             params.geometry.useOsDefaultSize = useOsDefaultSize;
 
@@ -245,9 +270,15 @@ namespace photinox
 
     // Title
 
-    std::string_view Window::Title() const noexcept
+    std::string Window::Title() const
     {
-        return impl_->title;
+        if (!impl_->nativeInstance)
+            return impl_->title;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetTitle(impl_->nativeInstance);
+        });
     }
 
     Window& Window::SetTitle(std::string_view title)
@@ -266,6 +297,49 @@ namespace photinox
 
             library.WindowSetTitle(impl_->nativeInstance, title.c_str());
             return library.WindowGetTitle(impl_->nativeInstance);
+        });
+
+        return *this;
+    }
+
+    // IconFile
+
+    std::string Window::IconFile() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->iconFile;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetIconFile(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetIconFile(std::string_view iconFile)
+    {
+        impl_->ThrowIfClosed("SetIconFile");
+
+        if (iconFile.empty())
+        {
+            if (impl_->nativeInstance)
+                throw std::logic_error("SetIconFile cannot clear the icon after the window has been initialized.");
+
+            impl_->iconFile.clear();
+            return *this;
+        }
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->iconFile = iconFile;
+            return *this;
+        }
+
+        impl_->iconFile = GetDispatcher().Invoke([this, iconFile = std::string(iconFile)]
+        {
+            auto& library = impl_->NativeLibrary();
+
+            library.WindowSetIconFile(impl_->nativeInstance, iconFile.c_str());
+            return library.WindowGetIconFile(impl_->nativeInstance);
         });
 
         return *this;
@@ -321,6 +395,20 @@ namespace photinox
         if (center)
             impl_->useOsDefaultLocation = false;
 
+        return *this;
+    }
+
+    // UseNativeWindowOwner
+
+    bool Window::UseNativeWindowOwner() const noexcept
+    {
+        return impl_->useNativeWindowOwner;
+    }
+
+    Window& Window::SetUseNativeWindowOwner(bool useNativeWindowOwner)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetUseNativeWindowOwner");
+        impl_->useNativeWindowOwner = useNativeWindowOwner;
         return *this;
     }
 
@@ -617,6 +705,297 @@ namespace photinox
 
         if (!centered)
             throw std::runtime_error("Failed to center the window.");
+
+        return *this;
+    }
+
+    // Window state
+
+    WindowState Window::GetWindowState() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->windowState;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetState(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetWindowState(WindowState state)
+    {
+        impl_->ThrowIfClosed("SetWindowState");
+
+        if (!IsValidWindowState(state))
+            throw std::invalid_argument("state");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->windowState = state;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, state]
+        {
+            impl_->NativeLibrary().WindowSetState(impl_->nativeInstance, state);
+        });
+
+        return *this;
+    }
+
+    // Maximized
+
+    bool Window::Maximized() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->windowState == WindowState::Maximized;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetMaximized(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetMaximized(bool maximized)
+    {
+        impl_->ThrowIfClosed("SetMaximized");
+
+        if (maximized)
+            return Maximize();
+
+        if (!impl_->nativeInstance)
+        {
+            if (impl_->windowState == WindowState::Maximized)
+                impl_->windowState = WindowState::Normal;
+
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this]
+        {
+            impl_->NativeLibrary().WindowSetMaximized(impl_->nativeInstance, false);
+        });
+
+        return *this;
+    }
+
+    // Minimized
+
+    bool Window::Minimized() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->windowState == WindowState::Minimized;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetMinimized(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetMinimized(bool minimized)
+    {
+        impl_->ThrowIfClosed("SetMinimized");
+
+        if (minimized)
+            return Minimize();
+
+        if (!impl_->nativeInstance)
+        {
+            if (impl_->windowState == WindowState::Minimized)
+                impl_->windowState = WindowState::Normal;
+
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this]
+        {
+            impl_->NativeLibrary().WindowSetMinimized(impl_->nativeInstance, false);
+        });
+
+        return *this;
+    }
+
+    // FullScreen
+
+    bool Window::FullScreen() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->windowState == WindowState::FullScreen;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetFullScreen(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetFullScreen(bool fullScreen)
+    {
+        impl_->ThrowIfClosed("SetFullScreen");
+
+        if (!impl_->nativeInstance)
+        {
+            if (fullScreen)
+                impl_->windowState = WindowState::FullScreen;
+            else if (impl_->windowState == WindowState::FullScreen)
+                impl_->windowState = WindowState::Normal;
+
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, fullScreen]
+        {
+            impl_->NativeLibrary().WindowSetFullScreen(impl_->nativeInstance, fullScreen);
+        });
+
+        return *this;
+    }
+
+    // Resizable
+
+    bool Window::Resizable() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->resizable;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetResizable(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetResizable(bool resizable)
+    {
+        impl_->ThrowIfClosed("SetResizable");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->resizable = resizable;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, resizable]
+        {
+            impl_->NativeLibrary().WindowSetResizable(impl_->nativeInstance, resizable);
+        });
+
+        return *this;
+    }
+
+    // Topmost
+
+    bool Window::Topmost() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->topmost;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetTopmost(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetTopmost(bool topmost)
+    {
+        impl_->ThrowIfClosed("SetTopmost");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->topmost = topmost;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, topmost]
+        {
+            impl_->NativeLibrary().WindowSetTopmost(impl_->nativeInstance, topmost);
+        });
+
+        return *this;
+    }
+
+    bool Window::Activate()
+    {
+        impl_->ThrowIfClosedOrNotInitialized("Activate");
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowActivate(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::BringToFront()
+    {
+        impl_->ThrowIfClosed("BringToFront");
+
+        Show();
+
+        if (GetWindowState() == WindowState::Minimized)
+            Restore();
+
+        if (!Activate())
+            throw std::runtime_error("Failed to activate the window.");
+
+        return *this;
+    }
+
+    Window& Window::Maximize()
+    {
+        impl_->ThrowIfClosed("Maximize");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->windowState = WindowState::Maximized;
+            return *this;
+        }
+
+        const bool maximized = GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowMaximize(impl_->nativeInstance);
+        });
+
+        if (!maximized)
+            throw std::runtime_error("Failed to maximize the window.");
+
+        return *this;
+    }
+
+    Window& Window::Minimize()
+    {
+        impl_->ThrowIfClosed("Minimize");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->windowState = WindowState::Minimized;
+            return *this;
+        }
+
+        const bool minimized = GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowMinimize(impl_->nativeInstance);
+        });
+
+        if (!minimized)
+            throw std::runtime_error("Failed to minimize the window.");
+
+        return *this;
+    }
+
+    Window& Window::Restore()
+    {
+        impl_->ThrowIfClosed("Restore");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->windowState = WindowState::Normal;
+            return *this;
+        }
+
+        const bool restored = GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowRestore(impl_->nativeInstance);
+        });
+
+        if (!restored)
+            throw std::runtime_error("Failed to restore the window.");
 
         return *this;
     }
