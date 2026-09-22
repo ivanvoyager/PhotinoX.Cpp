@@ -1,6 +1,7 @@
 #include <photinox/window.hpp>
 
 #include <photinox/application.hpp>
+#include <photinox/dispatcher.hpp>
 
 #include "native/library.hpp"
 #include "native/window.hpp"
@@ -33,6 +34,19 @@ namespace photinox
 
         std::string title = "PhotinoX";
         std::string startString;
+
+        Point location;
+        Size size;
+        Size minSize;
+        Size maxSize
+        {
+            .width = std::numeric_limits<int>::max(),
+            .height = std::numeric_limits<int>::max()
+        };
+
+        bool centerOnInitialize = false;
+        bool useOsDefaultLocation = true;
+        bool useOsDefaultSize = true;
 
         void* nativeInstance = nullptr;
 
@@ -76,12 +90,20 @@ namespace photinox
 
             params.linuxChromeless.resizeBorderThickness = 8;
 
-            params.geometry.maxWidth = std::numeric_limits<int>::max();
-            params.geometry.maxHeight = std::numeric_limits<int>::max();
+            params.geometry.left = location.x;
+            params.geometry.top = location.y;
+            params.geometry.width = size.width;
+            params.geometry.height = size.height;
+            params.geometry.minWidth = minSize.width;
+            params.geometry.minHeight = minSize.height;
+            params.geometry.maxWidth = maxSize.width;
+            params.geometry.maxHeight = maxSize.height;
             params.geometry.windowState = WindowState::Normal;
+            params.geometry.centerOnInitialize = centerOnInitialize;
             params.geometry.resizable = true;
-            params.geometry.useOsDefaultLocation = true;
-            params.geometry.useOsDefaultSize = true;
+            params.geometry.topmost = false;
+            params.geometry.useOsDefaultLocation = useOsDefaultLocation;
+            params.geometry.useOsDefaultSize = useOsDefaultSize;
 
             params.browser.startString = startString.empty() ? nullptr : startString.c_str();
 
@@ -119,10 +141,21 @@ namespace photinox
                 throw std::logic_error(std::string(memberName) + " cannot be called before the window is initialized.");
         }
 
+        void ThrowIfClosedOrInitialized(std::string_view memberName) const
+        {
+            ThrowIfClosed(memberName);
+            ThrowIfInitialized(memberName);
+        }
+
         void ThrowIfClosedOrNotInitialized(std::string_view memberName) const
         {
             ThrowIfClosed(memberName);
             ThrowIfNotInitialized(memberName);
+        }
+
+        [[nodiscard]] native::Library& NativeLibrary() const noexcept
+        {
+            return application.NativeLibrary();
         }
 
     private:
@@ -227,12 +260,382 @@ namespace photinox
             return *this;
         }
 
-        impl_->title = impl_->application.GetDispatcher().Invoke([this, title = std::string(title)]
+        impl_->title = GetDispatcher().Invoke([this, title = std::string(title)]
         {
-            auto& library = impl_->application.NativeLibrary();
+            auto& library = impl_->NativeLibrary();
 
             library.WindowSetTitle(impl_->nativeInstance, title.c_str());
             return library.WindowGetTitle(impl_->nativeInstance);
+        });
+
+        return *this;
+    }
+
+    // UseOsDefaultSize
+
+    bool Window::UseOsDefaultSize() const noexcept
+    {
+        return impl_->useOsDefaultSize;
+    }
+
+    Window& Window::SetUseOsDefaultSize(bool useDefault)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetUseOsDefaultSize");
+
+        impl_->useOsDefaultSize = useDefault;
+        return *this;
+    }
+
+    // UseOsDefaultLocation
+
+    bool Window::UseOsDefaultLocation() const noexcept
+    {
+        return impl_->useOsDefaultLocation;
+    }
+
+    Window& Window::SetUseOsDefaultLocation(bool useDefault)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetUseOsDefaultLocation");
+
+        impl_->useOsDefaultLocation = useDefault;
+
+        if (useDefault)
+            impl_->centerOnInitialize = false;
+
+        return *this;
+    }
+
+    // CenterOnInitialize
+
+    bool Window::CenterOnInitialize() const noexcept
+    {
+        return impl_->centerOnInitialize;
+    }
+
+    Window& Window::SetCenterOnInitialize(bool center)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetCenterOnInitialize");
+
+        impl_->centerOnInitialize = center;
+
+        if (center)
+            impl_->useOsDefaultLocation = false;
+
+        return *this;
+    }
+
+    // Geometry
+
+    // Size
+
+    Size Window::GetSize() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->size;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetSize(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetSize(Size size)
+    {
+        impl_->ThrowIfClosed("SetSize");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->size = size;
+            impl_->useOsDefaultSize = false;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, size]
+        {
+            impl_->NativeLibrary().WindowSetSize(impl_->nativeInstance, size);
+        });
+
+        return *this;
+    }
+
+    Window& Window::SetSize(int width, int height)
+    {
+        return SetSize(Size{ width, height });
+    }
+
+    // Width
+
+    int Window::Width() const
+    {
+        return GetSize().width;
+    }
+
+    Window& Window::SetWidth(int width)
+    {
+        Size size = GetSize();
+
+        if (size.width != width)
+        {
+            size.width = width;
+            SetSize(size);
+        }
+
+        return *this;
+    }
+
+    // Height
+
+    int Window::Height() const
+    {
+        return GetSize().height;
+    }
+
+    Window& Window::SetHeight(int height)
+    {
+        Size size = GetSize();
+
+        if (size.height != height)
+        {
+            size.height = height;
+            SetSize(size);
+        }
+
+        return *this;
+    }
+
+    // MinSize
+
+    Size Window::MinSize() const noexcept
+    {
+        return impl_->minSize;
+    }
+
+    Window& Window::SetMinSize(Size size)
+    {
+        impl_->ThrowIfClosed("SetMinSize");
+
+        if (impl_->minSize == size)
+            return *this;
+
+        if (impl_->nativeInstance)
+        {
+            GetDispatcher().Invoke([this, size]
+            {
+                impl_->NativeLibrary().WindowSetMinSize(impl_->nativeInstance, size);
+            });
+        }
+
+        impl_->minSize = size;
+        return *this;
+    }
+
+    Window& Window::SetMinSize(int width, int height)
+    {
+        return SetMinSize(Size{ width, height });
+    }
+
+    // MinWidth
+
+    int Window::MinWidth() const noexcept
+    {
+        return impl_->minSize.width;
+    }
+
+    Window& Window::SetMinWidth(int width)
+    {
+        Size size = impl_->minSize;
+        size.width = width;
+        return SetMinSize(size);
+    }
+
+    // MinHeight
+
+    int Window::MinHeight() const noexcept
+    {
+        return impl_->minSize.height;
+    }
+
+    Window& Window::SetMinHeight(int height)
+    {
+        Size size = impl_->minSize;
+        size.height = height;
+        return SetMinSize(size);
+    }
+
+    // MaxSize
+
+    Size Window::MaxSize() const noexcept
+    {
+        return impl_->maxSize;
+    }
+
+    Window& Window::SetMaxSize(Size size)
+    {
+        impl_->ThrowIfClosed("SetMaxSize");
+
+        if (impl_->maxSize == size)
+            return *this;
+
+        if (impl_->nativeInstance)
+        {
+            GetDispatcher().Invoke([this, size]
+            {
+                impl_->NativeLibrary().WindowSetMaxSize(impl_->nativeInstance, size);
+            });
+        }
+
+        impl_->maxSize = size;
+        return *this;
+    }
+
+    Window& Window::SetMaxSize(int width, int height)
+    {
+        return SetMaxSize(Size{ width, height });
+    }
+
+    // MaxWidth
+
+    int Window::MaxWidth() const noexcept
+    {
+        return impl_->maxSize.width;
+    }
+
+    Window& Window::SetMaxWidth(int width)
+    {
+        Size size = impl_->maxSize;
+        size.width = width;
+        return SetMaxSize(size);
+    }
+
+    // MaxHeight
+
+    int Window::MaxHeight() const noexcept
+    {
+        return impl_->maxSize.height;
+    }
+
+    Window& Window::SetMaxHeight(int height)
+    {
+        Size size = impl_->maxSize;
+        size.height = height;
+        return SetMaxSize(size);
+    }
+
+    // Location
+
+    Point Window::Location() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->location;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetPosition(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetLocation(Point location)
+    {
+        impl_->ThrowIfClosed("SetLocation");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->location = location;
+            impl_->useOsDefaultLocation = false;
+            impl_->centerOnInitialize = false;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, location]
+        {
+            impl_->NativeLibrary().WindowSetPosition(impl_->nativeInstance, location);
+        });
+
+        return *this;
+    }
+
+    Window& Window::SetLocation(int left, int top)
+    {
+        return SetLocation(Point{ left, top });
+    }
+
+    // Left
+
+    int Window::Left() const
+    {
+        return Location().x;
+    }
+
+    Window& Window::SetLeft(int left)
+    {
+        Point location = Location();
+
+        if (location.x != left)
+        {
+            location.x = left;
+            SetLocation(location);
+        }
+
+        return *this;
+    }
+
+    // Top
+
+    int Window::Top() const
+    {
+        return Location().y;
+    }
+
+    Window& Window::SetTop(int top)
+    {
+        Point location = Location();
+
+        if (location.y != top)
+        {
+            location.y = top;
+            SetLocation(location);
+        }
+
+        return *this;
+    }
+
+    Window& Window::Center()
+    {
+        impl_->ThrowIfClosed("Center");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->centerOnInitialize = true;
+            impl_->useOsDefaultLocation = false;
+            return *this;
+        }
+
+        const bool centered = GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowCenter(impl_->nativeInstance);
+        });
+
+        if (!centered)
+            throw std::runtime_error("Failed to center the window.");
+
+        return *this;
+    }
+
+    // Browser
+
+    Window& Window::LoadString(std::string_view content)
+    {
+        impl_->ThrowIfClosed("LoadString");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->startString = content;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, content = std::string(content)]
+        {
+            impl_->NativeLibrary().WindowNavigateToString(impl_->nativeInstance, content.c_str());
         });
 
         return *this;
@@ -255,12 +658,22 @@ namespace photinox
         return impl_->application;
     }
 
+    Dispatcher& Window::GetDispatcher() noexcept
+    {
+        return impl_->application.GetDispatcher();
+    }
+
+    const Dispatcher& Window::GetDispatcher() const noexcept
+    {
+        return impl_->application.GetDispatcher();
+    }
+
     Window* Window::Parent() const noexcept
     {
         return impl_->parent;
     }
 
-    // Methods
+    // Lifecycle methods
 
     void Window::InternalClose()
     {
@@ -271,33 +684,15 @@ namespace photinox
         Close();
     }
 
-    Window& Window::LoadString(std::string_view content)
-    {
-        impl_->ThrowIfClosed("LoadString");
-
-        if (!impl_->nativeInstance)
-        {
-            impl_->startString = content;
-            return *this;
-        }
-
-        impl_->application.GetDispatcher().Invoke([this, content = std::string(content)]
-        {
-            impl_->application.NativeLibrary().WindowNavigateToString(impl_->nativeInstance, content.c_str());
-        });
-
-        return *this;
-    }
-
     void Window::Show()
     {
         impl_->ThrowIfClosed("Show");
 
         if (impl_->nativeInstance)
         {
-            const bool shown = impl_->application.GetDispatcher().Invoke([this]
+            const bool shown = GetDispatcher().Invoke([this]
             {
-                return impl_->application.NativeLibrary().WindowShow(impl_->nativeInstance);
+                return impl_->NativeLibrary().WindowShow(impl_->nativeInstance);
             });
 
             if (!shown)
@@ -309,7 +704,7 @@ namespace photinox
         if (impl_->isCreating)
             throw std::logic_error("The window is already being created.");
 
-        impl_->application.GetDispatcher().VerifyAccessToCreateWindow();
+        GetDispatcher().VerifyAccessToCreateWindow();
 
         impl_->isCreating = true;
 
@@ -332,8 +727,7 @@ namespace photinox
 
         auto params = impl_->CreateInitParams(this);
 
-        void* nativeInstance =
-            impl_->application.NativeLibrary().WindowCreate(&params);
+        void* nativeInstance = impl_->NativeLibrary().WindowCreate(&params);
 
         assert(impl_->nativeInstance == nativeInstance);
 
@@ -347,9 +741,9 @@ namespace photinox
     {
         impl_->ThrowIfClosedOrNotInitialized("Close");
 
-        impl_->application.GetDispatcher().Invoke([this]
+        GetDispatcher().Invoke([this]
         {
-            impl_->application.NativeLibrary().WindowClose(impl_->nativeInstance);
+            impl_->NativeLibrary().WindowClose(impl_->nativeInstance);
         });
     }
 

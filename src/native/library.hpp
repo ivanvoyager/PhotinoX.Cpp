@@ -1,7 +1,8 @@
 #pragma once
 
-#include <photinox/callbacks.hpp>
+#include <photinox/geometry.hpp>
 
+#include "callbacks.hpp"
 #include "application.hpp"
 #include "notification.hpp"
 #include "window.hpp"
@@ -42,10 +43,20 @@ namespace photinox::native
         //window
         [[nodiscard]] void* WindowCreate(WindowInitParams* initParams) const;
         [[nodiscard]] bool WindowShow(void* instance) const;
+        [[nodiscard]] bool WindowCenter(void* instance) const noexcept;
         void WindowClose(void* instance) const noexcept;
 
         [[nodiscard]] std::string WindowGetTitle(void* instance) const;
         void WindowSetTitle(void* instance, const char* title) const noexcept;
+
+        [[nodiscard]] Point WindowGetPosition(void* instance) const noexcept;
+        void WindowSetPosition(void* instance, Point position) const noexcept;
+
+        [[nodiscard]] Size WindowGetSize(void* instance) const noexcept;
+        void WindowSetSize(void* instance, Size size) const noexcept;
+
+        void WindowSetMinSize(void* instance, Size size) const noexcept;
+        void WindowSetMaxSize(void* instance, Size size) const noexcept;
 
         //browser
         void WindowNavigateToString(void* instance, const char* content) const noexcept;
@@ -76,10 +87,20 @@ namespace photinox::native
         //window
         void* (*windowCreate_)(WindowInitParams*) = nullptr;
         bool (*windowShow_)(void*) = nullptr;
+        bool (*windowCenter_)(void*) = nullptr;
         void (*windowClose_)(void*) = nullptr;
 
         char* (*windowGetTitle_)(void*) = nullptr;
         void (*windowSetTitle_)(void*, const char*) = nullptr;
+
+        void (*windowGetPosition_)(void*, int*, int*) = nullptr;
+        void (*windowSetPosition_)(void*, int, int) = nullptr;
+
+        void (*windowGetSize_)(void*, int*, int*) = nullptr;
+        void (*windowSetSize_)(void*, int, int) = nullptr;
+
+        void (*windowSetMinSize_)(void*, int, int) = nullptr;
+        void (*windowSetMaxSize_)(void*, int, int) = nullptr;
 
         //browser
         void (*windowNavigateToString_)(void*, const char*) = nullptr;

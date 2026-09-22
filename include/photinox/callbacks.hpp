@@ -8,9 +8,6 @@
 namespace photinox
 {
     //application
-    using InvokeStateCallback = void (*)(void* state);
-    using ReleaseStateCallback = void (*)(void* state);
-
     using DispatcherCallback = std::function<void()>;
     using UnhandledExceptionHandler = std::function<void(std::exception_ptr exception)>;
 

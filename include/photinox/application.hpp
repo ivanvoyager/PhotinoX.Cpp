@@ -103,7 +103,7 @@ namespace photinox
         class Impl;
         std::unique_ptr<Impl> impl_;
 
-        [[nodiscard]] native::Library& NativeLibrary() noexcept;
+        [[nodiscard]] native::Library& NativeLibrary() const noexcept;
 
         void ThrowIfRunning(std::string_view memberName) const;
 

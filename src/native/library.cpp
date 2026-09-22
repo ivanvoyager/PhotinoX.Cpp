@@ -75,10 +75,20 @@ namespace photinox::native
             //window
             windowCreate_ = LoadExport<decltype(windowCreate_)>("Photino_ctor");
             windowShow_ = LoadExport<decltype(windowShow_)>("Photino_Show");
+            windowCenter_ = LoadExport<decltype(windowCenter_)>("Photino_Center");
             windowClose_ = LoadExport<decltype(windowClose_)>("Photino_Close");
 
             windowGetTitle_ = LoadExport<decltype(windowGetTitle_)>("Photino_GetTitle");
             windowSetTitle_ = LoadExport<decltype(windowSetTitle_)>("Photino_SetTitle");
+
+            windowGetPosition_ = LoadExport<decltype(windowGetPosition_)>("Photino_GetPosition");
+            windowSetPosition_ = LoadExport<decltype(windowSetPosition_)>("Photino_SetPosition");
+
+            windowGetSize_ = LoadExport<decltype(windowGetSize_)>("Photino_GetSize");
+            windowSetSize_ = LoadExport<decltype(windowSetSize_)>("Photino_SetSize");
+
+            windowSetMinSize_ = LoadExport<decltype(windowSetMinSize_)>("Photino_SetMinSize");
+            windowSetMaxSize_ = LoadExport<decltype(windowSetMaxSize_)>("Photino_SetMaxSize");
 
             //browser
             windowNavigateToString_ = LoadExport<decltype(windowNavigateToString_)>("Photino_NavigateToString");
@@ -179,6 +189,11 @@ namespace photinox::native
         return windowShow_(instance);
     }
 
+    bool Library::WindowCenter(void* instance) const noexcept
+    {
+        return windowCenter_(instance);
+    }
+
     void Library::WindowClose(void* instance) const noexcept
     {
         windowClose_(instance);
@@ -207,6 +222,40 @@ namespace photinox::native
     void Library::WindowSetTitle(void* instance, const char* title) const noexcept
     {
         windowSetTitle_(instance, title);
+    }
+
+    Point Library::WindowGetPosition(void* instance) const noexcept
+    {
+        Point position;
+        windowGetPosition_(instance, &position.x, &position.y);
+        return position;
+    }
+
+    void Library::WindowSetPosition(void* instance, Point position) const noexcept
+    {
+        windowSetPosition_(instance, position.x, position.y);
+    }
+
+    Size Library::WindowGetSize(void* instance) const noexcept
+    {
+        Size size;
+        windowGetSize_(instance, &size.width, &size.height);
+        return size;
+    }
+
+    void Library::WindowSetSize(void* instance, Size size) const noexcept
+    {
+        windowSetSize_(instance, size.width, size.height);
+    }
+
+    void Library::WindowSetMinSize(void* instance, Size size) const noexcept
+    {
+        windowSetMinSize_(instance, size.width, size.height);
+    }
+
+    void Library::WindowSetMaxSize(void* instance, Size size) const noexcept
+    {
+        windowSetMaxSize_(instance, size.width, size.height);
     }
 
     // browser

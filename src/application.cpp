@@ -437,7 +437,7 @@ namespace photinox
 
     // Properties
 
-    native::Library& Application::NativeLibrary() noexcept
+    native::Library& Application::NativeLibrary() const noexcept
     {
         return impl_->library;
     }
