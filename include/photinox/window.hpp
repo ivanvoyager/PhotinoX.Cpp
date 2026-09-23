@@ -150,6 +150,46 @@ namespace photinox
         [[nodiscard]] EventToken SubscribeClosedHandler(WindowHandler handler);
         bool UnsubscribeClosedHandler(EventToken token);
 
+        Window& RegisterActivatedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeActivatedHandler(WindowHandler handler);
+        bool UnsubscribeActivatedHandler(EventToken token);
+
+        Window& RegisterDeactivatedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeDeactivatedHandler(WindowHandler handler);
+        bool UnsubscribeDeactivatedHandler(EventToken token);
+
+        Window& RegisterSizeChangedHandler(SizeChangedHandler handler);
+        [[nodiscard]] EventToken SubscribeSizeChangedHandler(SizeChangedHandler handler);
+        bool UnsubscribeSizeChangedHandler(EventToken token);
+
+        Window& RegisterLocationChangedHandler(LocationChangedHandler handler);
+        [[nodiscard]] EventToken SubscribeLocationChangedHandler(LocationChangedHandler handler);
+        bool UnsubscribeLocationChangedHandler(EventToken token);
+
+        Window& RegisterMaximizedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeMaximizedHandler(WindowHandler handler);
+        bool UnsubscribeMaximizedHandler(EventToken token);
+
+        Window& RegisterRestoredHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeRestoredHandler(WindowHandler handler);
+        bool UnsubscribeRestoredHandler(EventToken token);
+
+        Window& RegisterMinimizedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeMinimizedHandler(WindowHandler handler);
+        bool UnsubscribeMinimizedHandler(EventToken token);
+
+        Window& RegisterFullScreenEnteredHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeFullScreenEnteredHandler(WindowHandler handler);
+        bool UnsubscribeFullScreenEnteredHandler(EventToken token);
+
+        Window& RegisterFullScreenExitedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeFullScreenExitedHandler(WindowHandler handler);
+        bool UnsubscribeFullScreenExitedHandler(EventToken token);
+
+        Window& RegisterStateChangedHandler(StateChangedHandler handler);
+        [[nodiscard]] EventToken SubscribeStateChangedHandler(StateChangedHandler handler);
+        bool UnsubscribeStateChangedHandler(EventToken token);
+
     private:
         friend class Application;
 

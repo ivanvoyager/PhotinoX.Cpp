@@ -76,10 +76,24 @@ namespace photinox
         using WindowHandlerList = eventpp::CallbackList<void()>;
         using ClosingHandlerList = eventpp::CallbackList<void(ClosingEventArgs&)>;
 
+        using SizeChangedHandlerList = eventpp::CallbackList<void(const SizeChangedEventArgs&)>;
+        using LocationChangedHandlerList = eventpp::CallbackList<void(const LocationChangedEventArgs&)>;
+        using StateChangedHandlerList = eventpp::CallbackList<void(const StateChangedEventArgs&)>;
+
         WindowHandlerList creatingHandlers;
         WindowHandlerList createdHandlers;
         ClosingHandlerList closingHandlers;
         WindowHandlerList closedHandlers;
+        WindowHandlerList activatedHandlers;
+        WindowHandlerList deactivatedHandlers;
+        SizeChangedHandlerList sizeChangedHandlers;
+        LocationChangedHandlerList locationChangedHandlers;
+        WindowHandlerList maximizedHandlers;
+        WindowHandlerList restoredHandlers;
+        WindowHandlerList minimizedHandlers;
+        WindowHandlerList fullScreenEnteredHandlers;
+        WindowHandlerList fullScreenExitedHandlers;
+        StateChangedHandlerList stateChangedHandlers;
 
         EventSubscriptionRegistry eventSubscriptions;
 
@@ -87,6 +101,16 @@ namespace photinox
         std::unordered_map<std::uint64_t, WindowHandlerList::Handle> createdHandlerSubscriptions;
         std::unordered_map<std::uint64_t, ClosingHandlerList::Handle> closingHandlerSubscriptions;
         std::unordered_map<std::uint64_t, WindowHandlerList::Handle> closedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, WindowHandlerList::Handle> activatedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, WindowHandlerList::Handle> deactivatedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, SizeChangedHandlerList::Handle> sizeChangedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, LocationChangedHandlerList::Handle> locationChangedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, WindowHandlerList::Handle> maximizedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, WindowHandlerList::Handle> restoredHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, WindowHandlerList::Handle> minimizedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, WindowHandlerList::Handle> fullScreenEnteredHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, WindowHandlerList::Handle> fullScreenExitedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, StateChangedHandlerList::Handle> stateChangedHandlerSubscriptions;
 
         bool isCreating = false;
         bool isClosed = false;
@@ -107,6 +131,16 @@ namespace photinox
             params.callbacks.createdHandler = CreatedCallback;
             params.callbacks.closingHandler = ClosingCallback;
             params.callbacks.closedHandler = ClosedCallback;
+            params.callbacks.focusInHandler = FocusInCallback;
+            params.callbacks.focusOutHandler = FocusOutCallback;
+            params.callbacks.resizedHandler = ResizedCallback;
+            params.callbacks.movedHandler = MovedCallback;
+            params.callbacks.maximizedHandler = MaximizedCallback;
+            params.callbacks.restoredHandler = RestoredCallback;
+            params.callbacks.minimizedHandler = MinimizedCallback;
+            params.callbacks.fullScreenChangedHandler = FullScreenChangedCallback;
+            params.callbacks.stateChangedHandler = StateChangedCallback;
+
             params.callbacks.callbackState = window;
 
             params.window.title = title.c_str();
@@ -185,6 +219,19 @@ namespace photinox
 
     private:
 
+        template<typename TCallback>
+        static void InvokeEvent(Application& application, TCallback&& callback) noexcept
+        {
+            try
+            {
+                std::forward<TCallback>(callback)();
+            }
+            catch (...)
+            {
+                application.OnUnhandledException(std::current_exception());
+            }
+        }
+
         static void CreatedCallback(void* instance, bool registered, void* state) noexcept
         {
             assert(instance);
@@ -197,14 +244,10 @@ namespace photinox
             impl.nativeInstance = instance;
             impl.application.OnWindowCreated(window, registered);
 
-            try
+            InvokeEvent(impl.application, [&impl]
             {
                 impl.createdHandlers();
-            }
-            catch (...)
-            {
-                impl.application.OnUnhandledException(std::current_exception());
-            }
+            });
         }
 
         static bool ClosingCallback(void* state) noexcept
@@ -239,17 +282,150 @@ namespace photinox
             impl.isClosed = true;
             impl.forceClose = false;
 
-            try
+            InvokeEvent(impl.application, [&impl]
             {
                 impl.closedHandlers();
-            }
-            catch (...)
-            {
-                impl.application.OnUnhandledException(std::current_exception());
-            }
+            });
 
             impl.application.OnWindowClosed(window);
         }
+
+        static void FocusInCallback(void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            InvokeEvent(impl.application, [&impl]
+            {
+                impl.activatedHandlers();
+            });
+        }
+
+        static void FocusOutCallback(void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            InvokeEvent(impl.application, [&impl]
+            {
+                impl.deactivatedHandlers();
+            });
+        }
+
+        static void ResizedCallback(int width, int height, void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            const Size size
+            {
+                .width = width,
+                .height = height
+            };
+
+            impl.size = size;
+
+            InvokeEvent(impl.application, [&impl, size]
+            {
+                const SizeChangedEventArgs args
+                {
+                    .size = size
+                };
+
+                impl.sizeChangedHandlers(args);
+            });
+        }
+
+        static void MovedCallback(int x, int y, void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            const Point location
+            {
+                .x = x,
+                .y = y
+            };
+
+            impl.location = location;
+
+            InvokeEvent(impl.application, [&impl, location]
+            {
+                const LocationChangedEventArgs args
+                {
+                    .location = location
+                };
+
+                impl.locationChangedHandlers(args);
+            });
+        }
+
+        static void MaximizedCallback(void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            InvokeEvent(impl.application, [&impl]
+            {
+                impl.maximizedHandlers();
+            });
+        }
+
+        static void RestoredCallback(void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            InvokeEvent(impl.application, [&impl]
+            {
+                impl.restoredHandlers();
+            });
+        }
+
+        static void MinimizedCallback(void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            InvokeEvent(impl.application, [&impl]
+            {
+                impl.minimizedHandlers();
+            });
+        }
+
+        static void FullScreenChangedCallback(bool fullScreen, void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            InvokeEvent(impl.application, [&impl, fullScreen]
+            {
+                if (fullScreen)
+                    impl.fullScreenEnteredHandlers();
+                else
+                    impl.fullScreenExitedHandlers();
+            });
+        }
+
+        static void StateChangedCallback(WindowState oldState, WindowState newState, void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            impl.windowState = newState;
+
+            InvokeEvent(impl.application, [&impl, oldState, newState]
+            {
+                const StateChangedEventArgs args
+                {
+                    .oldState = oldState,
+                    .newState = newState
+                };
+
+                impl.stateChangedHandlers(args);
+            });
+        }
+
     }; // class Window::Impl
 
     Window::Window(Application& application, Window* parent)
@@ -1206,5 +1382,205 @@ namespace photinox
     bool Window::UnsubscribeClosedHandler(EventToken token)
     {
         return impl_->eventSubscriptions.Unsubscribe(impl_->closedHandlers, impl_->closedHandlerSubscriptions, token);
+    }
+
+    // Activated Handlers
+
+    Window& Window::RegisterActivatedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterActivatedHandler");
+        RegisterEventHandler(impl_->activatedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeActivatedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeActivatedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->activatedHandlers, impl_->activatedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeActivatedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->activatedHandlers, impl_->activatedHandlerSubscriptions, token);
+    }
+
+    // Deactivated Handlers
+
+    Window& Window::RegisterDeactivatedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterDeactivatedHandler");
+        RegisterEventHandler(impl_->deactivatedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeDeactivatedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeDeactivatedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->deactivatedHandlers, impl_->deactivatedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeDeactivatedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->deactivatedHandlers, impl_->deactivatedHandlerSubscriptions, token);
+    }
+
+    // SizeChanged Handlers
+
+    Window& Window::RegisterSizeChangedHandler(SizeChangedHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterSizeChangedHandler");
+        RegisterEventHandler(impl_->sizeChangedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeSizeChangedHandler(SizeChangedHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeSizeChangedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->sizeChangedHandlers, impl_->sizeChangedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeSizeChangedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->sizeChangedHandlers, impl_->sizeChangedHandlerSubscriptions, token);
+    }
+
+    // LocationChanged Handlers
+
+    Window& Window::RegisterLocationChangedHandler(LocationChangedHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterLocationChangedHandler");
+        RegisterEventHandler(impl_->locationChangedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeLocationChangedHandler(LocationChangedHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeLocationChangedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->locationChangedHandlers, impl_->locationChangedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeLocationChangedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->locationChangedHandlers, impl_->locationChangedHandlerSubscriptions, token);
+    }
+
+    // Maximized Handlers
+
+    Window& Window::RegisterMaximizedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterMaximizedHandler");
+        RegisterEventHandler(impl_->maximizedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeMaximizedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeMaximizedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->maximizedHandlers, impl_->maximizedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeMaximizedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->maximizedHandlers, impl_->maximizedHandlerSubscriptions, token);
+    }
+
+    // Restored Handlers
+
+    Window& Window::RegisterRestoredHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterRestoredHandler");
+        RegisterEventHandler(impl_->restoredHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeRestoredHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeRestoredHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->restoredHandlers, impl_->restoredHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeRestoredHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->restoredHandlers, impl_->restoredHandlerSubscriptions, token);
+    }
+
+    // Minimized Handlers
+
+    Window& Window::RegisterMinimizedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterMinimizedHandler");
+        RegisterEventHandler(impl_->minimizedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeMinimizedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeMinimizedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->minimizedHandlers, impl_->minimizedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeMinimizedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->minimizedHandlers, impl_->minimizedHandlerSubscriptions, token);
+    }
+
+    // FullScreenEntered Handlers
+
+    Window& Window::RegisterFullScreenEnteredHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterFullScreenEnteredHandler");
+        RegisterEventHandler(impl_->fullScreenEnteredHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeFullScreenEnteredHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeFullScreenEnteredHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->fullScreenEnteredHandlers, impl_->fullScreenEnteredHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeFullScreenEnteredHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->fullScreenEnteredHandlers, impl_->fullScreenEnteredHandlerSubscriptions, token);
+    }
+
+    // FullScreenExited Handlers
+
+    Window& Window::RegisterFullScreenExitedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterFullScreenExitedHandler");
+        RegisterEventHandler(impl_->fullScreenExitedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeFullScreenExitedHandler(WindowHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeFullScreenExitedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->fullScreenExitedHandlers, impl_->fullScreenExitedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeFullScreenExitedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->fullScreenExitedHandlers, impl_->fullScreenExitedHandlerSubscriptions, token);
+    }
+
+    // StateChanged Handlers
+
+    Window& Window::RegisterStateChangedHandler(StateChangedHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterStateChangedHandler");
+        RegisterEventHandler(impl_->stateChangedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeStateChangedHandler(StateChangedHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeStateChangedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->stateChangedHandlers, impl_->stateChangedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeStateChangedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->stateChangedHandlers, impl_->stateChangedHandlerSubscriptions, token);
     }
 }

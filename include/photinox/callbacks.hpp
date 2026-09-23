@@ -27,4 +27,8 @@ namespace photinox
     //window
     using WindowHandler = std::function<void()>;
     using ClosingHandler = std::function<void(ClosingEventArgs& args)>;
+
+    using SizeChangedHandler = std::function<void(const SizeChangedEventArgs& args)>;
+    using LocationChangedHandler = std::function<void(const LocationChangedEventArgs& args)>;
+    using StateChangedHandler = std::function<void(const StateChangedEventArgs& args)>;
 }
