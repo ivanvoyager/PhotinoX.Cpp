@@ -196,6 +196,22 @@ namespace photinox
         [[nodiscard]] EventToken SubscribeWebMessageReceivedHandler(WebMessageReceivedHandler handler);
         bool UnsubscribeWebMessageReceivedHandler(EventToken token);
 
+        Window& RegisterNavigationStartingHandler(NavigationStartingHandler handler);
+        [[nodiscard]] EventToken SubscribeNavigationStartingHandler(NavigationStartingHandler handler);
+        bool UnsubscribeNavigationStartingHandler(EventToken token);
+
+        Window& RegisterNewWindowRequestedHandler(NewWindowRequestedHandler handler);
+        [[nodiscard]] EventToken SubscribeNewWindowRequestedHandler(NewWindowRequestedHandler handler);
+        bool UnsubscribeNewWindowRequestedHandler(EventToken token);
+
+        Window& RegisterContentLoadingHandler(ContentLoadingHandler handler);
+        [[nodiscard]] EventToken SubscribeContentLoadingHandler(ContentLoadingHandler handler);
+        bool UnsubscribeContentLoadingHandler(EventToken token);
+
+        Window& RegisterContentLoadedHandler(ContentLoadedHandler handler);
+        [[nodiscard]] EventToken SubscribeContentLoadedHandler(ContentLoadedHandler handler);
+        bool UnsubscribeContentLoadedHandler(EventToken token);
+
     private:
         friend class Application;
 

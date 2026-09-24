@@ -33,4 +33,8 @@ namespace photinox
     using StateChangedHandler = std::function<void(const StateChangedEventArgs& args)>;
 
     using WebMessageReceivedHandler = std::function<void(const WebMessageReceivedEventArgs& args)>;
+    using NavigationStartingHandler = std::function<void(NavigationStartingEventArgs& args)>;
+    using NewWindowRequestedHandler = std::function<void(const NewWindowRequestedEventArgs& args)>;
+    using ContentLoadingHandler = std::function<void(const ContentLoadingEventArgs& args)>;
+    using ContentLoadedHandler = std::function<void(const ContentLoadedEventArgs& args)>;
 }

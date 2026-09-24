@@ -81,6 +81,10 @@ namespace photinox
         using StateChangedHandlerList = eventpp::CallbackList<void(const StateChangedEventArgs&)>;
 
         using WebMessageReceivedHandlerList = eventpp::CallbackList<void(const WebMessageReceivedEventArgs&)>;
+        using NavigationStartingHandlerList = eventpp::CallbackList<void(NavigationStartingEventArgs&)>;
+        using NewWindowRequestedHandlerList = eventpp::CallbackList<void(const NewWindowRequestedEventArgs&)>;
+        using ContentLoadingHandlerList = eventpp::CallbackList<void(const ContentLoadingEventArgs&)>;
+        using ContentLoadedHandlerList = eventpp::CallbackList<void(const ContentLoadedEventArgs&)>;
 
         WindowHandlerList creatingHandlers;
         WindowHandlerList createdHandlers;
@@ -97,6 +101,10 @@ namespace photinox
         WindowHandlerList fullScreenExitedHandlers;
         StateChangedHandlerList stateChangedHandlers;
         WebMessageReceivedHandlerList webMessageReceivedHandlers;
+        NavigationStartingHandlerList navigationStartingHandlers;
+        NewWindowRequestedHandlerList newWindowRequestedHandlers;
+        ContentLoadingHandlerList contentLoadingHandlers;
+        ContentLoadedHandlerList contentLoadedHandlers;
 
         EventSubscriptionRegistry eventSubscriptions;
 
@@ -115,6 +123,10 @@ namespace photinox
         std::unordered_map<std::uint64_t, WindowHandlerList::Handle> fullScreenExitedHandlerSubscriptions;
         std::unordered_map<std::uint64_t, StateChangedHandlerList::Handle> stateChangedHandlerSubscriptions;
         std::unordered_map<std::uint64_t, WebMessageReceivedHandlerList::Handle> webMessageReceivedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, NavigationStartingHandlerList::Handle> navigationStartingHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, NewWindowRequestedHandlerList::Handle> newWindowRequestedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, ContentLoadingHandlerList::Handle> contentLoadingHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, ContentLoadedHandlerList::Handle> contentLoadedHandlerSubscriptions;
 
         bool isCreating = false;
         bool isClosed = false;
@@ -145,6 +157,11 @@ namespace photinox
             params.callbacks.fullScreenChangedHandler = FullScreenChangedCallback;
             params.callbacks.stateChangedHandler = StateChangedCallback;
             params.callbacks.webMessageReceivedHandler = WebMessageReceivedCallback;
+
+            params.callbacks.navigationStartingHandler = NavigationStartingCallback;
+            params.callbacks.newWindowRequestedHandler = NewWindowRequestedCallback;
+            params.callbacks.contentLoadingHandler = ContentLoadingCallback;
+            params.callbacks.contentLoadedHandler = ContentLoadedCallback;
 
             params.callbacks.callbackState = window;
 
@@ -237,6 +254,20 @@ namespace photinox
             }
         }
 
+        template<typename TCallback>
+        static bool InvokeCancelableEvent(Application& application, TCallback&& callback) noexcept
+        {
+            try
+            {
+                return std::forward<TCallback>(callback)();
+            }
+            catch (...)
+            {
+                application.OnUnhandledException(std::current_exception());
+                return false;
+            }
+        }
+
         static void CreatedCallback(void* instance, bool registered, void* state) noexcept
         {
             assert(instance);
@@ -263,17 +294,12 @@ namespace photinox
             if (impl.forceClose)
                 return false;
 
-            try
+            return InvokeCancelableEvent(impl.application, [&impl]
             {
                 ClosingEventArgs args;
                 impl.closingHandlers(args);
                 return args.cancel;
-            }
-            catch (...)
-            {
-                impl.application.OnUnhandledException(std::current_exception());
-                return false;
-            }
+            });
         }
 
         static void ClosedCallback(void* state) noexcept
@@ -451,6 +477,72 @@ namespace photinox
                 };
 
                 impl.webMessageReceivedHandlers(args);
+            });
+        }
+
+        static bool NavigationStartingCallback(const char* uri, void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            return InvokeCancelableEvent(impl.application, [&impl, uri]
+            {
+                NavigationStartingEventArgs args
+                {
+                    .uri = uri ? uri : ""
+                };
+
+                impl.navigationStartingHandlers(args);
+                return args.cancel;
+            });
+        }
+
+        static bool NewWindowRequestedCallback(const char* uri, void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            return InvokeCancelableEvent(impl.application, [&impl, uri]
+            {
+                NewWindowRequestedEventArgs args
+                {
+                    .uri = uri ? uri : ""
+                };
+
+                impl.newWindowRequestedHandlers(args);
+                return true; // PhotinoX suppresses browser-controlled popup windows by default.
+            });
+        }
+
+        static void ContentLoadingCallback(const char* uri, void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            InvokeEvent(impl.application, [&impl, uri]
+            {
+                const ContentLoadingEventArgs args
+                {
+                    .uri = uri ? uri : ""
+                };
+
+                impl.contentLoadingHandlers(args);
+            });
+        }
+
+        static void ContentLoadedCallback(const char* uri, void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            InvokeEvent(impl.application, [&impl, uri]
+            {
+                const ContentLoadedEventArgs args
+                {
+                    .uri = uri ? uri : ""
+                };
+
+                impl.contentLoadedHandlers(args);
             });
         }
 
@@ -1645,5 +1737,89 @@ namespace photinox
     bool Window::UnsubscribeWebMessageReceivedHandler(EventToken token)
     {
         return impl_->eventSubscriptions.Unsubscribe(impl_->webMessageReceivedHandlers, impl_->webMessageReceivedHandlerSubscriptions, token);
+    }
+
+    // NavigationStarting Handlers
+
+    Window& Window::RegisterNavigationStartingHandler(NavigationStartingHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterNavigationStartingHandler");
+        RegisterEventHandler(impl_->navigationStartingHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeNavigationStartingHandler(NavigationStartingHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeNavigationStartingHandler");
+
+        return impl_->eventSubscriptions.Subscribe(impl_->navigationStartingHandlers, impl_->navigationStartingHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeNavigationStartingHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->navigationStartingHandlers, impl_->navigationStartingHandlerSubscriptions, token);
+    }
+
+    // NewWindowRequested Handlers
+
+    Window& Window::RegisterNewWindowRequestedHandler(NewWindowRequestedHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterNewWindowRequestedHandler");
+        RegisterEventHandler(impl_->newWindowRequestedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeNewWindowRequestedHandler(NewWindowRequestedHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeNewWindowRequestedHandler");
+
+        return impl_->eventSubscriptions.Subscribe(impl_->newWindowRequestedHandlers,  impl_->newWindowRequestedHandlerSubscriptions,  std::move(handler));
+    }
+
+    bool Window::UnsubscribeNewWindowRequestedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->newWindowRequestedHandlers, impl_->newWindowRequestedHandlerSubscriptions, token);
+    }
+
+    // ContentLoading Handlers
+
+    Window& Window::RegisterContentLoadingHandler(ContentLoadingHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterContentLoadingHandler");
+        RegisterEventHandler(impl_->contentLoadingHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeContentLoadingHandler(ContentLoadingHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeContentLoadingHandler");
+
+        return impl_->eventSubscriptions.Subscribe(impl_->contentLoadingHandlers, impl_->contentLoadingHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeContentLoadingHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->contentLoadingHandlers, impl_->contentLoadingHandlerSubscriptions, token);
+    }
+
+    // ContentLoaded Handlers
+
+    Window& Window::RegisterContentLoadedHandler(ContentLoadedHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterContentLoadedHandler");
+        RegisterEventHandler(impl_->contentLoadedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeContentLoadedHandler(ContentLoadedHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeContentLoadedHandler");
+
+        return impl_->eventSubscriptions.Subscribe(impl_->contentLoadedHandlers, impl_->contentLoadedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeContentLoadedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->contentLoadedHandlers, impl_->contentLoadedHandlerSubscriptions, token);
     }
 }

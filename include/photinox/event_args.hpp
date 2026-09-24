@@ -88,4 +88,25 @@ namespace photinox
         std::string message;
         std::string uri;
     };
+
+    struct NavigationStartingEventArgs
+    {
+        std::string uri;
+        bool cancel = false;
+    };
+
+    struct NewWindowRequestedEventArgs
+    {
+        std::string uri;
+    };
+
+    struct ContentLoadingEventArgs
+    {
+        std::string uri;
+    };
+
+    struct ContentLoadedEventArgs
+    {
+        std::string uri;
+    };
 }
