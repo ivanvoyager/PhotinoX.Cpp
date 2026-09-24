@@ -55,6 +55,8 @@ namespace photinox
         [[nodiscard]] const Dispatcher& GetDispatcher() const noexcept;
 
         [[nodiscard]] Window* MainWindow() const noexcept;
+        Application& SetMainWindow(Window* mainWindow);
+
         [[nodiscard]] WindowCollection& Windows() noexcept;
         [[nodiscard]] const WindowCollection& Windows() const noexcept;
 
