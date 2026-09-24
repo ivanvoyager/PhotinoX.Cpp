@@ -82,4 +82,10 @@ namespace photinox
         WindowState oldState;
         WindowState newState;
     };
+
+    struct WebMessageReceivedEventArgs
+    {
+        std::string message;
+        std::string uri;
+    };
 }

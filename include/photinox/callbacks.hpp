@@ -31,4 +31,6 @@ namespace photinox
     using SizeChangedHandler = std::function<void(const SizeChangedEventArgs& args)>;
     using LocationChangedHandler = std::function<void(const LocationChangedEventArgs& args)>;
     using StateChangedHandler = std::function<void(const StateChangedEventArgs& args)>;
+
+    using WebMessageReceivedHandler = std::function<void(const WebMessageReceivedEventArgs& args)>;
 }

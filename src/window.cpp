@@ -80,6 +80,8 @@ namespace photinox
         using LocationChangedHandlerList = eventpp::CallbackList<void(const LocationChangedEventArgs&)>;
         using StateChangedHandlerList = eventpp::CallbackList<void(const StateChangedEventArgs&)>;
 
+        using WebMessageReceivedHandlerList = eventpp::CallbackList<void(const WebMessageReceivedEventArgs&)>;
+
         WindowHandlerList creatingHandlers;
         WindowHandlerList createdHandlers;
         ClosingHandlerList closingHandlers;
@@ -94,6 +96,7 @@ namespace photinox
         WindowHandlerList fullScreenEnteredHandlers;
         WindowHandlerList fullScreenExitedHandlers;
         StateChangedHandlerList stateChangedHandlers;
+        WebMessageReceivedHandlerList webMessageReceivedHandlers;
 
         EventSubscriptionRegistry eventSubscriptions;
 
@@ -111,6 +114,7 @@ namespace photinox
         std::unordered_map<std::uint64_t, WindowHandlerList::Handle> fullScreenEnteredHandlerSubscriptions;
         std::unordered_map<std::uint64_t, WindowHandlerList::Handle> fullScreenExitedHandlerSubscriptions;
         std::unordered_map<std::uint64_t, StateChangedHandlerList::Handle> stateChangedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, WebMessageReceivedHandlerList::Handle> webMessageReceivedHandlerSubscriptions;
 
         bool isCreating = false;
         bool isClosed = false;
@@ -140,6 +144,7 @@ namespace photinox
             params.callbacks.minimizedHandler = MinimizedCallback;
             params.callbacks.fullScreenChangedHandler = FullScreenChangedCallback;
             params.callbacks.stateChangedHandler = StateChangedCallback;
+            params.callbacks.webMessageReceivedHandler = WebMessageReceivedCallback;
 
             params.callbacks.callbackState = window;
 
@@ -423,6 +428,29 @@ namespace photinox
                 };
 
                 impl.stateChangedHandlers(args);
+            });
+        }
+
+        static void WebMessageReceivedCallback(const char* message, const char* uri, void* state) noexcept
+        {
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            if (!message || !*message)
+            {
+                assert(false);
+                return;
+            }
+
+            InvokeEvent(impl.application, [&impl, message, uri]
+            {
+                const WebMessageReceivedEventArgs args
+                {
+                    .message = message,
+                    .uri = uri ? uri : ""
+                };
+
+                impl.webMessageReceivedHandlers(args);
             });
         }
 
@@ -1196,6 +1224,21 @@ namespace photinox
         return *this;
     }
 
+    Window& Window::SendWebMessage(std::string_view message)
+    {
+        impl_->ThrowIfClosedOrNotInitialized("SendWebMessage");
+
+        if (message.empty())
+            throw std::invalid_argument("message");
+
+        GetDispatcher().Invoke([this, message = std::string(message)]
+        {
+            impl_->NativeLibrary().WindowSendWebMessage(impl_->nativeInstance, message.c_str());
+        });
+
+        return *this;
+    }
+
     // Getters
 
     bool Window::IsInitialized() const noexcept
@@ -1582,5 +1625,25 @@ namespace photinox
     bool Window::UnsubscribeStateChangedHandler(EventToken token)
     {
         return impl_->eventSubscriptions.Unsubscribe(impl_->stateChangedHandlers, impl_->stateChangedHandlerSubscriptions, token);
+    }
+
+    // WebMessageReceived Handlers
+
+    Window& Window::RegisterWebMessageReceivedHandler(WebMessageReceivedHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterWebMessageReceivedHandler");
+        RegisterEventHandler(impl_->webMessageReceivedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeWebMessageReceivedHandler(WebMessageReceivedHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeWebMessageReceivedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->webMessageReceivedHandlers, impl_->webMessageReceivedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeWebMessageReceivedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->webMessageReceivedHandlers, impl_->webMessageReceivedHandlerSubscriptions, token);
     }
 }

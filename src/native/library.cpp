@@ -117,6 +117,7 @@ namespace photinox::native
 
             //browser
             windowNavigateToString_ = LoadExport<decltype(windowNavigateToString_)>("Photino_NavigateToString");
+            windowSendWebMessage_ = LoadExport<decltype(windowSendWebMessage_)>("Photino_SendWebMessage");
         }
         catch (...)
         {
@@ -405,5 +406,10 @@ namespace photinox::native
     void Library::WindowNavigateToString(void* instance, const char* content) const noexcept
     {
         windowNavigateToString_(instance, content);
+    }
+
+    void Library::WindowSendWebMessage(void* instance, const char* message) const noexcept
+    {
+        windowSendWebMessage_(instance, message);
     }
 }

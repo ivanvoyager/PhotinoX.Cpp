@@ -119,6 +119,8 @@ namespace photinox
 
         Window& LoadString(std::string_view content);
 
+        Window& SendWebMessage(std::string_view message);
+
         // Getters
 
         [[nodiscard]] bool IsInitialized() const noexcept;
@@ -189,6 +191,10 @@ namespace photinox
         Window& RegisterStateChangedHandler(StateChangedHandler handler);
         [[nodiscard]] EventToken SubscribeStateChangedHandler(StateChangedHandler handler);
         bool UnsubscribeStateChangedHandler(EventToken token);
+
+        Window& RegisterWebMessageReceivedHandler(WebMessageReceivedHandler handler);
+        [[nodiscard]] EventToken SubscribeWebMessageReceivedHandler(WebMessageReceivedHandler handler);
+        bool UnsubscribeWebMessageReceivedHandler(EventToken token);
 
     private:
         friend class Application;
