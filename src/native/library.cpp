@@ -119,6 +119,21 @@ namespace photinox::native
             windowNavigateToString_ = LoadExport<decltype(windowNavigateToString_)>("Photino_NavigateToString");
             windowNavigateToUrl_ = LoadExport<decltype(windowNavigateToUrl_)>("Photino_NavigateToUrl");
             windowSendWebMessage_ = LoadExport<decltype(windowSendWebMessage_)>("Photino_SendWebMessage");
+
+            windowGetContextMenuEnabled_ = LoadExport<decltype(windowGetContextMenuEnabled_)>("Photino_GetContextMenuEnabled");
+            windowSetContextMenuEnabled_ = LoadExport<decltype(windowSetContextMenuEnabled_)>("Photino_SetContextMenuEnabled");
+
+            windowGetZoomEnabled_ = LoadExport<decltype(windowGetZoomEnabled_)>("Photino_GetZoomEnabled");
+            windowSetZoomEnabled_ = LoadExport<decltype(windowSetZoomEnabled_)>("Photino_SetZoomEnabled");
+
+            windowGetStatusBarEnabled_ = LoadExport<decltype(windowGetStatusBarEnabled_)>("Photino_GetStatusBarEnabled");
+            windowSetStatusBarEnabled_ = LoadExport<decltype(windowSetStatusBarEnabled_)>("Photino_SetStatusBarEnabled");
+
+            windowGetDevToolsEnabled_ = LoadExport<decltype(windowGetDevToolsEnabled_)>("Photino_GetDevToolsEnabled");
+            windowSetDevToolsEnabled_ = LoadExport<decltype(windowSetDevToolsEnabled_)>("Photino_SetDevToolsEnabled");
+
+            windowGetZoom_ = LoadExport<decltype(windowGetZoom_)>("Photino_GetZoom");
+            windowSetZoom_ = LoadExport<decltype(windowSetZoom_)>("Photino_SetZoom");
         }
         catch (...)
         {
@@ -417,5 +432,65 @@ namespace photinox::native
     void Library::WindowSendWebMessage(void* instance, const char* message) const noexcept
     {
         windowSendWebMessage_(instance, message);
+    }
+
+    bool Library::WindowGetContextMenuEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetContextMenuEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    void Library::WindowSetContextMenuEnabled(void* instance, bool enabled) const noexcept
+    {
+        windowSetContextMenuEnabled_(instance, enabled);
+    }
+
+    bool Library::WindowGetZoomEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetZoomEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    void Library::WindowSetZoomEnabled(void* instance, bool enabled) const noexcept
+    {
+        windowSetZoomEnabled_(instance, enabled);
+    }
+
+    bool Library::WindowGetStatusBarEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetStatusBarEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    void Library::WindowSetStatusBarEnabled(void* instance, bool enabled) const noexcept
+    {
+        windowSetStatusBarEnabled_(instance, enabled);
+    }
+
+    bool Library::WindowGetDevToolsEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetDevToolsEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    void Library::WindowSetDevToolsEnabled(void* instance, bool enabled) const noexcept
+    {
+        windowSetDevToolsEnabled_(instance, enabled);
+    }
+
+    int Library::WindowGetZoom(void* instance) const noexcept
+    {
+        int zoom = 100;
+        windowGetZoom_(instance, &zoom);
+        return zoom;
+    }
+
+    void Library::WindowSetZoom(void* instance, int zoom) const noexcept
+    {
+        windowSetZoom_(instance, zoom);
     }
 }

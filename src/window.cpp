@@ -74,6 +74,12 @@ namespace photinox
 
         void* nativeInstance = nullptr;
 
+        int zoom = 100;
+        bool contextMenuEnabled = true;
+        bool zoomEnabled = true;
+        bool statusBarEnabled = true;
+        bool devToolsEnabled = true;
+
         using WindowHandlerList = eventpp::CallbackList<void()>;
         using ClosingHandlerList = eventpp::CallbackList<void(ClosingEventArgs&)>;
 
@@ -190,11 +196,12 @@ namespace photinox
             params.browser.startString = startString.empty() ? nullptr : startString.c_str();
             params.browser.startUrl = startUrl.empty() ? nullptr : startUrl.c_str();
 
-            params.browser.zoom = 100;
-            params.browser.zoomEnabled = true;
-            params.browser.contextMenuEnabled = true;
-            params.browser.statusBarEnabled = true;
-            params.browser.devToolsEnabled = true;
+            params.browser.zoom = zoom;
+            params.browser.zoomEnabled = zoomEnabled;
+            params.browser.contextMenuEnabled = contextMenuEnabled;
+            params.browser.statusBarEnabled = statusBarEnabled;
+            params.browser.devToolsEnabled = devToolsEnabled;
+
             params.browser.grantBrowserPermissions = true;
             params.browser.mediaAutoplayEnabled = true;
             params.browser.fileSystemAccessEnabled = true;
@@ -1370,6 +1377,161 @@ namespace photinox
 
         return *this;
     }
+
+    // ContextMenuEnabled
+
+    bool Window::ContextMenuEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->contextMenuEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetContextMenuEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetContextMenuEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosed("SetContextMenuEnabled");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->contextMenuEnabled = enabled;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, enabled]
+        {
+            impl_->NativeLibrary().WindowSetContextMenuEnabled(impl_->nativeInstance, enabled);
+        });
+
+        return *this;
+    }
+
+    // ZoomEnabled
+
+    bool Window::ZoomEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->zoomEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetZoomEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetZoomEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosed("SetZoomEnabled");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->zoomEnabled = enabled;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, enabled]
+        {
+            impl_->NativeLibrary().WindowSetZoomEnabled(impl_->nativeInstance, enabled);
+        });
+
+        return *this;
+    }
+
+    // StatusBarEnabled
+
+    bool Window::StatusBarEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->statusBarEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetStatusBarEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetStatusBarEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosed("SetStatusBarEnabled");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->statusBarEnabled = enabled;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, enabled]
+        {
+            impl_->NativeLibrary().WindowSetStatusBarEnabled(impl_->nativeInstance, enabled);
+        });
+
+        return *this;
+    }
+
+    // DevToolsEnabled
+
+    bool Window::DevToolsEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->devToolsEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetDevToolsEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetDevToolsEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosed("SetDevToolsEnabled");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->devToolsEnabled = enabled;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, enabled]
+        {
+            impl_->NativeLibrary().WindowSetDevToolsEnabled(impl_->nativeInstance, enabled);
+        });
+
+        return *this;
+    }
+
+    int Window::Zoom() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->zoom;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetZoom(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetZoom(int zoom)
+    {
+        impl_->ThrowIfClosed("SetZoom");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->zoom = zoom;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, zoom]
+        {
+            impl_->NativeLibrary().WindowSetZoom(impl_->nativeInstance, zoom);
+        });
+
+        return *this;
+    }
+
+    // Communication
 
     Window& Window::SendWebMessage(std::string_view message)
     {

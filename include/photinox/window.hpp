@@ -127,6 +127,21 @@ namespace photinox
 
         Window& Load(std::string_view url);
 
+        [[nodiscard]] bool ContextMenuEnabled() const;
+        Window& SetContextMenuEnabled(bool enabled);
+
+        [[nodiscard]] bool ZoomEnabled() const;
+        Window& SetZoomEnabled(bool enabled);
+
+        [[nodiscard]] bool StatusBarEnabled() const;
+        Window& SetStatusBarEnabled(bool enabled);
+
+        [[nodiscard]] bool DevToolsEnabled() const;
+        Window& SetDevToolsEnabled(bool enabled);
+
+        [[nodiscard]] int Zoom() const;
+        Window& SetZoom(int zoom);
+
         Window& SendWebMessage(std::string_view message);
 
         // Getters

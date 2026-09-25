@@ -88,6 +88,21 @@ namespace photinox::native
         void WindowNavigateToUrl(void* instance, const char* url) const noexcept;
         void WindowSendWebMessage(void* instance, const char* message) const noexcept;
 
+        [[nodiscard]] bool WindowGetContextMenuEnabled(void* instance) const noexcept;
+        void WindowSetContextMenuEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] bool WindowGetZoomEnabled(void* instance) const noexcept;
+        void WindowSetZoomEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] bool WindowGetStatusBarEnabled(void* instance) const noexcept;
+        void WindowSetStatusBarEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] bool WindowGetDevToolsEnabled(void* instance) const noexcept;
+        void WindowSetDevToolsEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] int WindowGetZoom(void* instance) const noexcept;
+        void WindowSetZoom(void* instance, int zoom) const noexcept;
+
     private:
         template<typename T>
         [[nodiscard]] T LoadExport(const char* name) const;
@@ -158,5 +173,20 @@ namespace photinox::native
         void (*windowNavigateToString_)(void*, const char*) = nullptr;
         void (*windowNavigateToUrl_)(void*, const char*) = nullptr;
         void (*windowSendWebMessage_)(void*, const char*) = nullptr;
+
+        void (*windowGetContextMenuEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetContextMenuEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetZoomEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetZoomEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetStatusBarEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetStatusBarEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetDevToolsEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetDevToolsEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetZoom_)(void*, int*) = nullptr;
+        void (*windowSetZoom_)(void*, int) = nullptr;
     };
 }
