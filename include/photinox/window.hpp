@@ -166,6 +166,11 @@ namespace photinox
         [[nodiscard]] bool IgnoreCertificateErrorsEnabled() const;
         Window& SetIgnoreCertificateErrorsEnabled(bool enabled);
 
+        [[nodiscard]] bool Transparent() const;
+        Window& SetTransparent(bool transparent);
+
+        Window& ClearBrowserAutoFill();
+
         Window& SendWebMessage(std::string_view message);
 
         // Getters

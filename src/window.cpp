@@ -72,6 +72,8 @@ namespace photinox
         bool useOsDefaultSize = true;
         bool useNativeWindowOwner = false;
 
+        bool transparent = false;
+
         void* nativeInstance = nullptr;
 
         int zoom = 100;
@@ -183,6 +185,8 @@ namespace photinox
 
             params.window.title = title.c_str();
             params.window.iconFile = iconFile.empty() ? nullptr : iconFile.c_str();
+
+            params.window.transparent = transparent;
             params.window.useNativeWindowOwner = useNativeWindowOwner;
 
             params.linuxChromeless.resizeBorderThickness = 8;
@@ -1696,6 +1700,51 @@ namespace photinox
     {
         impl_->ThrowIfClosedOrInitialized("SetIgnoreCertificateErrorsEnabled");
         impl_->ignoreCertificateErrorsEnabled = enabled;
+        return *this;
+    }
+
+    // Transparent
+
+    bool Window::Transparent() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->transparent;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetTransparentEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetTransparent(bool transparent)
+    {
+        impl_->ThrowIfClosed("SetTransparent");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->transparent = transparent;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, transparent]
+        {
+            impl_->NativeLibrary().WindowSetTransparentEnabled(impl_->nativeInstance, transparent);
+        });
+
+        return *this;
+    }
+
+    // Features
+
+    Window& Window::ClearBrowserAutoFill()
+    {
+        impl_->ThrowIfClosedOrNotInitialized("ClearBrowserAutoFill");
+
+        GetDispatcher().Invoke([this]
+        {
+            impl_->NativeLibrary().WindowClearBrowserAutoFill(impl_->nativeInstance);
+        });
+
         return *this;
     }
 
