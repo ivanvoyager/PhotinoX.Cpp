@@ -85,6 +85,7 @@ namespace photinox::native
 
         //browser
         void WindowNavigateToString(void* instance, const char* content) const noexcept;
+        void WindowNavigateToUrl(void* instance, const char* url) const noexcept;
         void WindowSendWebMessage(void* instance, const char* message) const noexcept;
 
     private:
@@ -155,6 +156,7 @@ namespace photinox::native
 
         //browser
         void (*windowNavigateToString_)(void*, const char*) = nullptr;
+        void (*windowNavigateToUrl_)(void*, const char*) = nullptr;
         void (*windowSendWebMessage_)(void*, const char*) = nullptr;
     };
 }

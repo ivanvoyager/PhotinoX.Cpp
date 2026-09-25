@@ -117,7 +117,15 @@ namespace photinox
 
         // Browser
 
+        [[nodiscard]] std::string_view StartString() const noexcept;
+        Window& SetStartString(std::string_view content);
+
         Window& LoadString(std::string_view content);
+
+        [[nodiscard]] std::string_view StartUrl() const noexcept;
+        Window& SetStartUrl(std::string_view url);
+
+        Window& Load(std::string_view url);
 
         Window& SendWebMessage(std::string_view message);
 

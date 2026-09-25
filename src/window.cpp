@@ -52,6 +52,7 @@ namespace photinox
         std::string title = "PhotinoX";
         std::string iconFile;
         std::string startString;
+        std::string startUrl;
 
         Point location;
         Size size;
@@ -187,6 +188,7 @@ namespace photinox
             params.geometry.useOsDefaultSize = useOsDefaultSize;
 
             params.browser.startString = startString.empty() ? nullptr : startString.c_str();
+            params.browser.startUrl = startUrl.empty() ? nullptr : startUrl.c_str();
 
             params.browser.zoom = 100;
             params.browser.zoomEnabled = true;
@@ -1298,6 +1300,21 @@ namespace photinox
 
     // Browser
 
+    // StartString
+
+    std::string_view Window::StartString() const noexcept
+    {
+        return impl_->startString;
+    }
+
+    Window& Window::SetStartString(std::string_view content)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetStartString");
+
+        impl_->startString = content;
+        return *this;
+    }
+
     Window& Window::LoadString(std::string_view content)
     {
         impl_->ThrowIfClosed("LoadString");
@@ -1305,6 +1322,7 @@ namespace photinox
         if (!impl_->nativeInstance)
         {
             impl_->startString = content;
+            impl_->startUrl.clear();
             return *this;
         }
 
@@ -1316,12 +1334,46 @@ namespace photinox
         return *this;
     }
 
+    // StartUrl
+
+    std::string_view Window::StartUrl() const noexcept
+    {
+        return impl_->startUrl;
+    }
+
+    Window& Window::SetStartUrl(std::string_view url)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetStartUrl");
+
+        impl_->startUrl = url;
+        return *this;
+    }
+
+    Window& Window::Load(std::string_view url)
+    {
+        impl_->ThrowIfClosed("Load");
+
+        if (url.empty())
+            throw std::invalid_argument("url");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->startUrl = url;
+            impl_->startString.clear();
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, url = std::string(url)]
+        {
+            impl_->NativeLibrary().WindowNavigateToUrl(impl_->nativeInstance, url.c_str());
+        });
+
+        return *this;
+    }
+
     Window& Window::SendWebMessage(std::string_view message)
     {
         impl_->ThrowIfClosedOrNotInitialized("SendWebMessage");
-
-        if (message.empty())
-            throw std::invalid_argument("message");
 
         GetDispatcher().Invoke([this, message = std::string(message)]
         {
@@ -1410,9 +1462,14 @@ namespace photinox
 
         impl_->isCreating = false;
 
-        if (impl_->startString.empty())
+        if (impl_->startString.empty() && impl_->startUrl.empty())
         {
-            throw std::invalid_argument("Initial browser content must be supplied with LoadString.");
+            throw std::invalid_argument("An initial URL or HTML string must be supplied with Load or LoadString.");
+        }
+
+        if (!impl_->startString.empty() && !impl_->startUrl.empty())
+        {
+            throw std::invalid_argument("StartString and StartUrl cannot be specified at the same time.");
         }
 
         auto params = impl_->CreateInitParams(this);
