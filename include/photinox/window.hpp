@@ -142,6 +142,30 @@ namespace photinox
         [[nodiscard]] int Zoom() const;
         Window& SetZoom(int zoom);
 
+        [[nodiscard]] bool GrantBrowserPermissions() const;
+        Window& SetGrantBrowserPermissions(bool grant);
+
+        [[nodiscard]] bool MediaAutoplayEnabled() const;
+        Window& SetMediaAutoplayEnabled(bool enabled);
+
+        [[nodiscard]] bool FileSystemAccessEnabled() const;
+        Window& SetFileSystemAccessEnabled(bool enabled);
+
+        [[nodiscard]] bool WebSecurityEnabled() const;
+        Window& SetWebSecurityEnabled(bool enabled);
+
+        [[nodiscard]] bool JavascriptClipboardAccessEnabled() const;
+        Window& SetJavascriptClipboardAccessEnabled(bool enabled);
+
+        [[nodiscard]] bool MediaStreamEnabled() const;
+        Window& SetMediaStreamEnabled(bool enabled);
+
+        [[nodiscard]] bool SmoothScrollingEnabled() const;
+        Window& SetSmoothScrollingEnabled(bool enabled);
+
+        [[nodiscard]] bool IgnoreCertificateErrorsEnabled() const;
+        Window& SetIgnoreCertificateErrorsEnabled(bool enabled);
+
         Window& SendWebMessage(std::string_view message);
 
         // Getters

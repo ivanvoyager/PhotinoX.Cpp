@@ -80,6 +80,15 @@ namespace photinox
         bool statusBarEnabled = true;
         bool devToolsEnabled = true;
 
+        bool grantBrowserPermissions = true;
+        bool mediaAutoplayEnabled = true;
+        bool fileSystemAccessEnabled = true;
+        bool webSecurityEnabled = true;
+        bool javascriptClipboardAccessEnabled = true;
+        bool mediaStreamEnabled = true;
+        bool smoothScrollingEnabled = true;
+        bool ignoreCertificateErrorsEnabled = false;
+
         using WindowHandlerList = eventpp::CallbackList<void()>;
         using ClosingHandlerList = eventpp::CallbackList<void(ClosingEventArgs&)>;
 
@@ -202,13 +211,14 @@ namespace photinox
             params.browser.statusBarEnabled = statusBarEnabled;
             params.browser.devToolsEnabled = devToolsEnabled;
 
-            params.browser.grantBrowserPermissions = true;
-            params.browser.mediaAutoplayEnabled = true;
-            params.browser.fileSystemAccessEnabled = true;
-            params.browser.webSecurityEnabled = true;
-            params.browser.javascriptClipboardAccessEnabled = true;
-            params.browser.mediaStreamEnabled = true;
-            params.browser.smoothScrollingEnabled = true;
+            params.browser.grantBrowserPermissions = grantBrowserPermissions;
+            params.browser.mediaAutoplayEnabled = mediaAutoplayEnabled;
+            params.browser.fileSystemAccessEnabled = fileSystemAccessEnabled;
+            params.browser.webSecurityEnabled = webSecurityEnabled;
+            params.browser.javascriptClipboardAccessEnabled = javascriptClipboardAccessEnabled;
+            params.browser.mediaStreamEnabled = mediaStreamEnabled;
+            params.browser.smoothScrollingEnabled = smoothScrollingEnabled;
+            params.browser.ignoreCertificateErrorsEnabled = ignoreCertificateErrorsEnabled;
 
             return params;
         }
@@ -1528,6 +1538,164 @@ namespace photinox
             impl_->NativeLibrary().WindowSetZoom(impl_->nativeInstance, zoom);
         });
 
+        return *this;
+    }
+
+    // GrantBrowserPermissions
+
+    bool Window::GrantBrowserPermissions() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->grantBrowserPermissions;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetGrantBrowserPermissions(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetGrantBrowserPermissions(bool grant)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetGrantBrowserPermissions");
+        impl_->grantBrowserPermissions = grant;
+        return *this;
+    }
+
+    // MediaAutoplayEnabled
+
+    bool Window::MediaAutoplayEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->mediaAutoplayEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetMediaAutoplayEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetMediaAutoplayEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetMediaAutoplayEnabled");
+        impl_->mediaAutoplayEnabled = enabled;
+        return *this;
+    }
+
+    // FileSystemAccessEnabled
+
+    bool Window::FileSystemAccessEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->fileSystemAccessEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetFileSystemAccessEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetFileSystemAccessEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetFileSystemAccessEnabled");
+        impl_->fileSystemAccessEnabled = enabled;
+        return *this;
+    }
+
+    // WebSecurityEnabled
+
+    bool Window::WebSecurityEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->webSecurityEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetWebSecurityEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetWebSecurityEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetWebSecurityEnabled");
+        impl_->webSecurityEnabled = enabled;
+        return *this;
+    }
+
+    bool Window::JavascriptClipboardAccessEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->javascriptClipboardAccessEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetJavascriptClipboardAccessEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetJavascriptClipboardAccessEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetJavascriptClipboardAccessEnabled");
+        impl_->javascriptClipboardAccessEnabled = enabled;
+        return *this;
+    }
+
+    // MediaStreamEnabled
+
+    bool Window::MediaStreamEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->mediaStreamEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetMediaStreamEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetMediaStreamEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetMediaStreamEnabled");
+        impl_->mediaStreamEnabled = enabled;
+        return *this;
+    }
+
+    // SmoothScrollingEnabled
+
+    bool Window::SmoothScrollingEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->smoothScrollingEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetSmoothScrollingEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetSmoothScrollingEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetSmoothScrollingEnabled");
+        impl_->smoothScrollingEnabled = enabled;
+        return *this;
+    }
+
+    // IgnoreCertificateErrorsEnabled
+
+    bool Window::IgnoreCertificateErrorsEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->ignoreCertificateErrorsEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetIgnoreCertificateErrorsEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetIgnoreCertificateErrorsEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetIgnoreCertificateErrorsEnabled");
+        impl_->ignoreCertificateErrorsEnabled = enabled;
         return *this;
     }
 

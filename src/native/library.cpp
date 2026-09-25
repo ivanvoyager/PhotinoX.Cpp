@@ -134,6 +134,15 @@ namespace photinox::native
 
             windowGetZoom_ = LoadExport<decltype(windowGetZoom_)>("Photino_GetZoom");
             windowSetZoom_ = LoadExport<decltype(windowSetZoom_)>("Photino_SetZoom");
+
+            windowGetGrantBrowserPermissions_ = LoadExport<decltype(windowGetGrantBrowserPermissions_)>("Photino_GetGrantBrowserPermissions");
+            windowGetMediaAutoplayEnabled_ = LoadExport<decltype(windowGetMediaAutoplayEnabled_)>("Photino_GetMediaAutoplayEnabled");
+            windowGetFileSystemAccessEnabled_ = LoadExport<decltype(windowGetFileSystemAccessEnabled_)>("Photino_GetFileSystemAccessEnabled");
+            windowGetWebSecurityEnabled_ = LoadExport<decltype(windowGetWebSecurityEnabled_)>("Photino_GetWebSecurityEnabled");
+            windowGetJavascriptClipboardAccessEnabled_ = LoadExport<decltype(windowGetJavascriptClipboardAccessEnabled_)>("Photino_GetJavascriptClipboardAccessEnabled");
+            windowGetMediaStreamEnabled_ = LoadExport<decltype(windowGetMediaStreamEnabled_)>("Photino_GetMediaStreamEnabled");
+            windowGetSmoothScrollingEnabled_ = LoadExport<decltype(windowGetSmoothScrollingEnabled_)>("Photino_GetSmoothScrollingEnabled");
+            windowGetIgnoreCertificateErrorsEnabled_ = LoadExport<decltype(windowGetIgnoreCertificateErrorsEnabled_)>("Photino_GetIgnoreCertificateErrorsEnabled");
         }
         catch (...)
         {
@@ -492,5 +501,61 @@ namespace photinox::native
     void Library::WindowSetZoom(void* instance, int zoom) const noexcept
     {
         windowSetZoom_(instance, zoom);
+    }
+
+    bool Library::WindowGetGrantBrowserPermissions(void* instance) const noexcept
+    {
+        bool grant = false;
+        windowGetGrantBrowserPermissions_(instance, &grant);
+        return grant;
+    }
+
+    bool Library::WindowGetMediaAutoplayEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetMediaAutoplayEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    bool Library::WindowGetFileSystemAccessEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetFileSystemAccessEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    bool Library::WindowGetWebSecurityEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetWebSecurityEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    bool Library::WindowGetJavascriptClipboardAccessEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetJavascriptClipboardAccessEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    bool Library::WindowGetMediaStreamEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetMediaStreamEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    bool Library::WindowGetSmoothScrollingEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetSmoothScrollingEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    bool Library::WindowGetIgnoreCertificateErrorsEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetIgnoreCertificateErrorsEnabled_(instance, &enabled);
+        return enabled;
     }
 }

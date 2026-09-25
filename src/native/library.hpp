@@ -103,6 +103,15 @@ namespace photinox::native
         [[nodiscard]] int WindowGetZoom(void* instance) const noexcept;
         void WindowSetZoom(void* instance, int zoom) const noexcept;
 
+        [[nodiscard]] bool WindowGetGrantBrowserPermissions(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetMediaAutoplayEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetFileSystemAccessEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetWebSecurityEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetJavascriptClipboardAccessEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetMediaStreamEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetSmoothScrollingEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetIgnoreCertificateErrorsEnabled(void* instance) const noexcept;
+
     private:
         template<typename T>
         [[nodiscard]] T LoadExport(const char* name) const;
@@ -188,5 +197,14 @@ namespace photinox::native
 
         void (*windowGetZoom_)(void*, int*) = nullptr;
         void (*windowSetZoom_)(void*, int) = nullptr;
+
+        void (*windowGetGrantBrowserPermissions_)(void*, bool*) = nullptr;
+        void (*windowGetMediaAutoplayEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetFileSystemAccessEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetWebSecurityEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetJavascriptClipboardAccessEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetMediaStreamEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetSmoothScrollingEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetIgnoreCertificateErrorsEnabled_)(void*, bool*) = nullptr;
     };
 }
