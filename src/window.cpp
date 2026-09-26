@@ -71,7 +71,7 @@ namespace photinox
         bool useOsDefaultLocation = true;
         bool useOsDefaultSize = true;
         bool useNativeWindowOwner = false;
-
+        bool chromeless = false;
         bool transparent = false;
 
         void* nativeInstance = nullptr;
@@ -188,7 +188,7 @@ namespace photinox
 
             params.window.title = title.c_str();
             params.window.iconFile = iconFile.empty() ? nullptr : iconFile.c_str();
-            params.window.chromeless = false;
+            params.window.chromeless = chromeless;
             params.window.transparent = transparent;
             params.window.useNativeWindowOwner = useNativeWindowOwner;
             params.window.showOnInitialize = showOnInitialize;
@@ -270,6 +270,14 @@ namespace photinox
 
             if (minSize.height > maxSize.height)
                 throw std::invalid_argument("minHeight");
+#ifdef _WIN32
+            if (chromeless && (useOsDefaultLocation || useOsDefaultSize))
+            {
+                throw std::invalid_argument(
+                    "Chromeless cannot be used with UseOsDefaultLocation or "
+                    "UseOsDefaultSize on Windows. Size and location must be specified.");
+            }
+#endif
         }
 
         void ThrowIfClosed(std::string_view memberName) const
@@ -733,7 +741,6 @@ namespace photinox
     Window& Window::SetUseOsDefaultSize(bool useDefault)
     {
         impl_->ThrowIfClosedOrInitialized("SetUseOsDefaultSize");
-
         impl_->useOsDefaultSize = useDefault;
         return *this;
     }
@@ -1378,6 +1385,57 @@ namespace photinox
         return *this;
     }
 
+    // Appearance
+
+    // Chromeless
+
+    bool Window::Chromeless() const noexcept
+    {
+        return impl_->chromeless;
+    }
+
+    Window& Window::SetChromeless(bool chromeless)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetChromeless");
+        impl_->chromeless = chromeless;
+        return *this;
+    }
+
+    // Transparent
+
+    bool Window::Transparent() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->transparent;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetTransparentEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetTransparent(bool transparent)
+    {
+        impl_->ThrowIfClosed("SetTransparent");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->transparent = transparent;
+            return *this;
+        }
+
+#if defined(_WIN32) || defined(__APPLE__)
+        throw std::runtime_error("SetTransparent cannot be called on Windows or macOS after the window has been initialized.");
+#endif
+
+        GetDispatcher().Invoke([this, transparent]
+        {
+            impl_->NativeLibrary().WindowSetTransparentEnabled(impl_->nativeInstance, transparent);
+        });
+
+        return *this;
+    }
+
     // Browser
 
     // StartString
@@ -1390,7 +1448,6 @@ namespace photinox
     Window& Window::SetStartString(std::string_view content)
     {
         impl_->ThrowIfClosedOrInitialized("SetStartString");
-
         impl_->startString = content;
         return *this;
     }
@@ -1424,7 +1481,6 @@ namespace photinox
     Window& Window::SetStartUrl(std::string_view url)
     {
         impl_->ThrowIfClosedOrInitialized("SetStartUrl");
-
         impl_->startUrl = url;
         return *this;
     }
@@ -1762,42 +1818,15 @@ namespace photinox
         return *this;
     }
 
-    // Transparent
-
-    bool Window::Transparent() const
-    {
-        if (!impl_->nativeInstance)
-            return impl_->transparent;
-
-        return GetDispatcher().Invoke([this]
-        {
-            return impl_->NativeLibrary().WindowGetTransparentEnabled(impl_->nativeInstance);
-        });
-    }
-
-    Window& Window::SetTransparent(bool transparent)
-    {
-        impl_->ThrowIfClosed("SetTransparent");
-
-        if (!impl_->nativeInstance)
-        {
-            impl_->transparent = transparent;
-            return *this;
-        }
-
-        GetDispatcher().Invoke([this, transparent]
-        {
-            impl_->NativeLibrary().WindowSetTransparentEnabled(impl_->nativeInstance, transparent);
-        });
-
-        return *this;
-    }
-
     // Features
 
     Window& Window::ClearBrowserAutoFill()
     {
         impl_->ThrowIfClosedOrNotInitialized("ClearBrowserAutoFill");
+
+#ifndef _WIN32
+        throw std::runtime_error("ClearBrowserAutoFill is only supported on Windows.");
+#endif
 
         GetDispatcher().Invoke([this]
         {

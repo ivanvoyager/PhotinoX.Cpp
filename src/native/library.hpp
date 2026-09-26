@@ -86,6 +86,10 @@ namespace photinox::native
 
         [[nodiscard]] bool WindowGetVisible(void* instance) const noexcept;
 
+        // appearance
+        [[nodiscard]] bool WindowGetTransparentEnabled(void* instance) const noexcept;
+        void WindowSetTransparentEnabled(void* instance, bool enabled) const noexcept;
+
         //browser
         void WindowNavigateToString(void* instance, const char* content) const noexcept;
         void WindowNavigateToUrl(void* instance, const char* url) const noexcept;
@@ -114,9 +118,6 @@ namespace photinox::native
         [[nodiscard]] bool WindowGetMediaStreamEnabled(void* instance) const noexcept;
         [[nodiscard]] bool WindowGetSmoothScrollingEnabled(void* instance) const noexcept;
         [[nodiscard]] bool WindowGetIgnoreCertificateErrorsEnabled(void* instance) const noexcept;
-
-        [[nodiscard]] bool WindowGetTransparentEnabled(void* instance) const noexcept;
-        void WindowSetTransparentEnabled(void* instance, bool enabled) const noexcept;
 
         void WindowClearBrowserAutoFill(void* instance) const noexcept;
 
@@ -189,6 +190,9 @@ namespace photinox::native
 
         void (*windowGetVisible_)(void*, bool*) = nullptr;
 
+        void (*windowGetTransparentEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetTransparentEnabled_)(void*, bool) = nullptr;
+
         //browser
         void (*windowNavigateToString_)(void*, const char*) = nullptr;
         void (*windowNavigateToUrl_)(void*, const char*) = nullptr;
@@ -217,9 +221,6 @@ namespace photinox::native
         void (*windowGetMediaStreamEnabled_)(void*, bool*) = nullptr;
         void (*windowGetSmoothScrollingEnabled_)(void*, bool*) = nullptr;
         void (*windowGetIgnoreCertificateErrorsEnabled_)(void*, bool*) = nullptr;
-
-        void (*windowGetTransparentEnabled_)(void*, bool*) = nullptr;
-        void (*windowSetTransparentEnabled_)(void*, bool) = nullptr;
 
         void (*windowClearBrowserAutoFill_)(void*) = nullptr;
     };

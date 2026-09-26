@@ -118,6 +118,9 @@ namespace photinox::native
 
             windowGetVisible_ = LoadExport<decltype(windowGetVisible_)>("Photino_GetVisible");
 
+            windowGetTransparentEnabled_ = LoadExport<decltype(windowGetTransparentEnabled_)>("Photino_GetTransparentEnabled");
+            windowSetTransparentEnabled_ = LoadExport<decltype(windowSetTransparentEnabled_)>("Photino_SetTransparentEnabled");
+
             //browser
             windowNavigateToString_ = LoadExport<decltype(windowNavigateToString_)>("Photino_NavigateToString");
             windowNavigateToUrl_ = LoadExport<decltype(windowNavigateToUrl_)>("Photino_NavigateToUrl");
@@ -146,9 +149,6 @@ namespace photinox::native
             windowGetMediaStreamEnabled_ = LoadExport<decltype(windowGetMediaStreamEnabled_)>("Photino_GetMediaStreamEnabled");
             windowGetSmoothScrollingEnabled_ = LoadExport<decltype(windowGetSmoothScrollingEnabled_)>("Photino_GetSmoothScrollingEnabled");
             windowGetIgnoreCertificateErrorsEnabled_ = LoadExport<decltype(windowGetIgnoreCertificateErrorsEnabled_)>("Photino_GetIgnoreCertificateErrorsEnabled");
-
-            windowGetTransparentEnabled_ = LoadExport<decltype(windowGetTransparentEnabled_)>("Photino_GetTransparentEnabled");
-            windowSetTransparentEnabled_ = LoadExport<decltype(windowSetTransparentEnabled_)>("Photino_SetTransparentEnabled");
 
             windowClearBrowserAutoFill_ = LoadExport<decltype(windowClearBrowserAutoFill_)>("Photino_ClearBrowserAutoFill");
         }
@@ -446,6 +446,20 @@ namespace photinox::native
         return visible;
     }
 
+    // appearance
+
+    bool Library::WindowGetTransparentEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetTransparentEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    void Library::WindowSetTransparentEnabled(void* instance, bool enabled) const noexcept
+    {
+        windowSetTransparentEnabled_(instance, enabled);
+    }
+
     // browser
 
     void Library::WindowNavigateToString(void* instance, const char* content) const noexcept
@@ -577,18 +591,6 @@ namespace photinox::native
         bool enabled = false;
         windowGetIgnoreCertificateErrorsEnabled_(instance, &enabled);
         return enabled;
-    }
-
-    bool Library::WindowGetTransparentEnabled(void* instance) const noexcept
-    {
-        bool enabled = false;
-        windowGetTransparentEnabled_(instance, &enabled);
-        return enabled;
-    }
-
-    void Library::WindowSetTransparentEnabled(void* instance, bool enabled) const noexcept
-    {
-        windowSetTransparentEnabled_(instance, enabled);
     }
 
     void Library::WindowClearBrowserAutoFill(void* instance) const noexcept

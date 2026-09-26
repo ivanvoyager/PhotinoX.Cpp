@@ -115,6 +115,14 @@ namespace photinox
         Window& Minimize();
         Window& Restore();
 
+        // Appearance
+
+        [[nodiscard]] bool Chromeless() const noexcept;
+        Window& SetChromeless(bool chromeless);
+
+        [[nodiscard]] bool Transparent() const;
+        Window& SetTransparent(bool transparent);
+
         // Browser
 
         [[nodiscard]] std::string_view StartString() const noexcept;
@@ -165,9 +173,6 @@ namespace photinox
 
         [[nodiscard]] bool IgnoreCertificateErrorsEnabled() const;
         Window& SetIgnoreCertificateErrorsEnabled(bool enabled);
-
-        [[nodiscard]] bool Transparent() const;
-        Window& SetTransparent(bool transparent);
 
         Window& ClearBrowserAutoFill();
 
