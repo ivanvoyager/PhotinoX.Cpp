@@ -29,13 +29,29 @@ int main()
 
     window
         .SetTitle("PhotinoX.Cpp HelloWorld")
-        .LoadString(
-            "<!DOCTYPE html>"
-            "<html>"
-            "<body>"
-            "<h1>PhotinoX.Cpp</h1>"
-            "</body>"
-            "</html>")
+        .Center()
+        .LoadString(R"(
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <meta charset="utf-8">
+            <title>PhotinoX.Cpp Web Messaging</title>
+        </head>
+        <body>
+            <h1>Web messaging</h1>
+            <button id="send-message">Send message to C++</button>
+
+            <script>
+                document
+                    .getElementById("send-message")
+                    .addEventListener("click", () =>
+                    {
+                        window.external.sendMessage("Hello from JavaScript");
+                    });
+            </script>
+        </body>
+    </html>
+)")
         .RegisterCreatingHandler([]
         {
             std::cout << "Creating window" << '\n';
@@ -62,6 +78,11 @@ int main()
             std::cout << "Closed window, count: " << application.Windows().Size() << '\n';
 
             assert(application.Windows().Empty());
+        })
+        .RegisterWebMessageReceivedHandler([](const WebMessageReceivedEventArgs& args)
+        {
+            std::cout << "Message: " << args.message << '\n';
+            std::cout << "Source: " << args.uri << '\n';
         });
 
     application

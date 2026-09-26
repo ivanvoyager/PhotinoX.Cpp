@@ -8,9 +8,6 @@
 namespace photinox
 {
     //application
-    using InvokeStateCallback = void (*)(void* state);
-    using ReleaseStateCallback = void (*)(void* state);
-
     using DispatcherCallback = std::function<void()>;
     using UnhandledExceptionHandler = std::function<void(std::exception_ptr exception)>;
 
@@ -30,4 +27,14 @@ namespace photinox
     //window
     using WindowHandler = std::function<void()>;
     using ClosingHandler = std::function<void(ClosingEventArgs& args)>;
+
+    using SizeChangedHandler = std::function<void(const SizeChangedEventArgs& args)>;
+    using LocationChangedHandler = std::function<void(const LocationChangedEventArgs& args)>;
+    using StateChangedHandler = std::function<void(const StateChangedEventArgs& args)>;
+
+    using WebMessageReceivedHandler = std::function<void(const WebMessageReceivedEventArgs& args)>;
+    using NavigationStartingHandler = std::function<void(NavigationStartingEventArgs& args)>;
+    using NewWindowRequestedHandler = std::function<void(const NewWindowRequestedEventArgs& args)>;
+    using ContentLoadingHandler = std::function<void(const ContentLoadingEventArgs& args)>;
+    using ContentLoadedHandler = std::function<void(const ContentLoadedEventArgs& args)>;
 }

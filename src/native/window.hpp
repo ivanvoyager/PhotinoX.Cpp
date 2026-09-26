@@ -63,6 +63,7 @@ namespace photinox::native
         bool chromeless;
         bool transparent;
         bool useNativeWindowOwner;
+        bool showOnInitialize;
     };
 
     static_assert(std::is_standard_layout_v<WindowInitOptions>);
@@ -136,7 +137,7 @@ namespace photinox::native
 
     struct WindowInitParams
     {
-        static constexpr int NativeAbiVersion = 7;
+        static constexpr int NativeAbiVersion = 8;
 
         int size;
         int abiVersion;

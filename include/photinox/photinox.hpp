@@ -6,5 +6,6 @@
 #include <photinox/enums.hpp>
 #include <photinox/event_args.hpp>
 #include <photinox/event_token.hpp>
+#include <photinox/geometry.hpp>
 #include <photinox/window.hpp>
 #include <photinox/window_collection.hpp>

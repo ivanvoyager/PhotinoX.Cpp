@@ -44,12 +44,12 @@ namespace photinox
 
             try
             {
-                const auto [_, inserted] = subscriptions.emplace(token.value_, handle);
+                [[maybe_unused]] const auto [_, inserted] = subscriptions.emplace(token.value_, handle);
                 assert(inserted);
             }
             catch (...)
             {
-                const bool removed = handlers.remove(handle);
+                [[maybe_unused]] const bool removed = handlers.remove(handle);
                 assert(removed);
                 throw;
             }

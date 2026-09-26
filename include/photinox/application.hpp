@@ -55,6 +55,8 @@ namespace photinox
         [[nodiscard]] const Dispatcher& GetDispatcher() const noexcept;
 
         [[nodiscard]] Window* MainWindow() const noexcept;
+        Application& SetMainWindow(Window* mainWindow);
+
         [[nodiscard]] WindowCollection& Windows() noexcept;
         [[nodiscard]] const WindowCollection& Windows() const noexcept;
 
@@ -103,7 +105,8 @@ namespace photinox
         class Impl;
         std::unique_ptr<Impl> impl_;
 
-        [[nodiscard]] native::Library& NativeLibrary() noexcept;
+        [[nodiscard]] native::Library& NativeLibrary() const noexcept;
+
         void ThrowIfRunning(std::string_view memberName) const;
 
         void CloseWindows();

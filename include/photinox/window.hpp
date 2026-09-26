@@ -1,13 +1,17 @@
 #pragma once
 
 #include <photinox/callbacks.hpp>
+#include <photinox/event_token.hpp>
+#include <photinox/geometry.hpp>
 
 #include <memory>
+#include <string>
 #include <string_view>
 
 namespace photinox
 {
     class Application;
+    class Dispatcher;
 
     class Window final
     {
@@ -21,22 +25,256 @@ namespace photinox
         Window(Window&&) = delete;
         Window& operator=(Window&&) = delete;
 
-        [[nodiscard]] bool IsInitialized() const noexcept;
-        [[nodiscard]] bool IsClosed() const noexcept;
+        // Startup / initialization
 
-        [[nodiscard]] Application& GetApplication() const noexcept;
-        [[nodiscard]] Window* Parent() const noexcept;
-
+        [[nodiscard]] std::string Title() const;
         Window& SetTitle(std::string_view title);
+
+        [[nodiscard]] std::string IconFile() const;
+        Window& SetIconFile(std::string_view iconFile);
+
+        [[nodiscard]] bool UseOsDefaultSize() const noexcept;
+        Window& SetUseOsDefaultSize(bool useDefault);
+
+        [[nodiscard]] bool UseOsDefaultLocation() const noexcept;
+        Window& SetUseOsDefaultLocation(bool useDefault);
+
+        [[nodiscard]] bool CenterOnInitialize() const noexcept;
+        Window& SetCenterOnInitialize(bool center);
+
+        [[nodiscard]] bool UseNativeWindowOwner() const noexcept;
+        Window& SetUseNativeWindowOwner(bool useNativeWindowOwner);
+
+        // Geometry
+
+        [[nodiscard]] Size GetSize() const;
+        Window& SetSize(Size size);
+        Window& SetSize(int width, int height);
+
+        [[nodiscard]] int Width() const;
+        Window& SetWidth(int width);
+
+        [[nodiscard]] int Height() const;
+        Window& SetHeight(int height);
+
+        [[nodiscard]] Size MinSize() const noexcept;
+        Window& SetMinSize(Size size);
+        Window& SetMinSize(int width, int height);
+
+        [[nodiscard]] int MinWidth() const noexcept;
+        Window& SetMinWidth(int width);
+
+        [[nodiscard]] int MinHeight() const noexcept;
+        Window& SetMinHeight(int height);
+
+        [[nodiscard]] Size MaxSize() const noexcept;
+        Window& SetMaxSize(Size size);
+        Window& SetMaxSize(int width, int height);
+
+        [[nodiscard]] int MaxWidth() const noexcept;
+        Window& SetMaxWidth(int width);
+
+        [[nodiscard]] int MaxHeight() const noexcept;
+        Window& SetMaxHeight(int height);
+
+        [[nodiscard]] Point Location() const;
+        Window& SetLocation(Point location);
+        Window& SetLocation(int left, int top);
+
+        [[nodiscard]] int Left() const;
+        Window& SetLeft(int left);
+
+        [[nodiscard]] int Top() const;
+        Window& SetTop(int top);
+
+        Window& Center();
+
+        // Window state
+
+        [[nodiscard]] WindowState GetWindowState() const;
+        Window& SetWindowState(WindowState state);
+
+        [[nodiscard]] bool Maximized() const;
+        Window& SetMaximized(bool maximized);
+
+        [[nodiscard]] bool Minimized() const;
+        Window& SetMinimized(bool minimized);
+
+        [[nodiscard]] bool FullScreen() const;
+        Window& SetFullScreen(bool fullScreen);
+
+        [[nodiscard]] bool Resizable() const;
+        Window& SetResizable(bool resizable);
+
+        [[nodiscard]] bool Topmost() const;
+        Window& SetTopmost(bool topmost);
+
+        [[nodiscard]] bool Activate();
+        Window& BringToFront();
+        Window& Maximize();
+        Window& Minimize();
+        Window& Restore();
+
+        // Appearance
+
+        [[nodiscard]] bool Chromeless() const noexcept;
+        Window& SetChromeless(bool chromeless);
+
+        [[nodiscard]] bool Transparent() const;
+        Window& SetTransparent(bool transparent);
+
+        // Browser
+
+        [[nodiscard]] std::string_view StartString() const noexcept;
+        Window& SetStartString(std::string_view content);
+
         Window& LoadString(std::string_view content);
 
-        Window& RegisterCreatingHandler(WindowHandler handler);
-        Window& RegisterCreatedHandler(WindowHandler handler);
-        Window& RegisterClosingHandler(ClosingHandler handler);
-        Window& RegisterClosedHandler(WindowHandler handler);
+        [[nodiscard]] std::string_view StartUrl() const noexcept;
+        Window& SetStartUrl(std::string_view url);
 
+        Window& Load(std::string_view url);
+
+        [[nodiscard]] bool ContextMenuEnabled() const;
+        Window& SetContextMenuEnabled(bool enabled);
+
+        [[nodiscard]] bool ZoomEnabled() const;
+        Window& SetZoomEnabled(bool enabled);
+
+        [[nodiscard]] bool StatusBarEnabled() const;
+        Window& SetStatusBarEnabled(bool enabled);
+
+        [[nodiscard]] bool DevToolsEnabled() const;
+        Window& SetDevToolsEnabled(bool enabled);
+
+        [[nodiscard]] int Zoom() const;
+        Window& SetZoom(int zoom);
+
+        [[nodiscard]] bool GrantBrowserPermissions() const;
+        Window& SetGrantBrowserPermissions(bool grant);
+
+        [[nodiscard]] bool MediaAutoplayEnabled() const;
+        Window& SetMediaAutoplayEnabled(bool enabled);
+
+        [[nodiscard]] bool FileSystemAccessEnabled() const;
+        Window& SetFileSystemAccessEnabled(bool enabled);
+
+        [[nodiscard]] bool WebSecurityEnabled() const;
+        Window& SetWebSecurityEnabled(bool enabled);
+
+        [[nodiscard]] bool JavascriptClipboardAccessEnabled() const;
+        Window& SetJavascriptClipboardAccessEnabled(bool enabled);
+
+        [[nodiscard]] bool MediaStreamEnabled() const;
+        Window& SetMediaStreamEnabled(bool enabled);
+
+        [[nodiscard]] bool SmoothScrollingEnabled() const;
+        Window& SetSmoothScrollingEnabled(bool enabled);
+
+        [[nodiscard]] bool IgnoreCertificateErrorsEnabled() const;
+        Window& SetIgnoreCertificateErrorsEnabled(bool enabled);
+
+        Window& ClearBrowserAutoFill();
+
+        Window& SendWebMessage(std::string_view message);
+
+        // Getters
+
+        [[nodiscard]] bool IsInitialized() const noexcept;
+        [[nodiscard]] bool IsClosed() const noexcept;
+        [[nodiscard]] bool IsVisible() const;
+
+        [[nodiscard]] Application& GetApplication() const noexcept;
+        [[nodiscard]] Dispatcher& GetDispatcher() noexcept;
+        [[nodiscard]] const Dispatcher& GetDispatcher() const noexcept;
+        [[nodiscard]] Window* Parent() const noexcept;
+
+        // Lifecycle methods
+
+        void Initialize();
         void Show();
+        void Hide();
         void Close();
+
+        Window& RegisterCreatingHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeCreatingHandler(WindowHandler handler);
+        bool UnsubscribeCreatingHandler(EventToken token);
+
+        Window& RegisterCreatedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeCreatedHandler(WindowHandler handler);
+        bool UnsubscribeCreatedHandler(EventToken token);
+
+        Window& RegisterClosingHandler(ClosingHandler handler);
+        [[nodiscard]] EventToken SubscribeClosingHandler(ClosingHandler handler);
+        bool UnsubscribeClosingHandler(EventToken token);
+
+        Window& RegisterClosedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeClosedHandler(WindowHandler handler);
+        bool UnsubscribeClosedHandler(EventToken token);
+
+        Window& RegisterActivatedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeActivatedHandler(WindowHandler handler);
+        bool UnsubscribeActivatedHandler(EventToken token);
+
+        Window& RegisterDeactivatedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeDeactivatedHandler(WindowHandler handler);
+        bool UnsubscribeDeactivatedHandler(EventToken token);
+
+        Window& RegisterSizeChangedHandler(SizeChangedHandler handler);
+        [[nodiscard]] EventToken SubscribeSizeChangedHandler(SizeChangedHandler handler);
+        bool UnsubscribeSizeChangedHandler(EventToken token);
+
+        Window& RegisterLocationChangedHandler(LocationChangedHandler handler);
+        [[nodiscard]] EventToken SubscribeLocationChangedHandler(LocationChangedHandler handler);
+        bool UnsubscribeLocationChangedHandler(EventToken token);
+
+        Window& RegisterMaximizedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeMaximizedHandler(WindowHandler handler);
+        bool UnsubscribeMaximizedHandler(EventToken token);
+
+        Window& RegisterRestoredHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeRestoredHandler(WindowHandler handler);
+        bool UnsubscribeRestoredHandler(EventToken token);
+
+        Window& RegisterMinimizedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeMinimizedHandler(WindowHandler handler);
+        bool UnsubscribeMinimizedHandler(EventToken token);
+
+        Window& RegisterFullScreenEnteredHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeFullScreenEnteredHandler(WindowHandler handler);
+        bool UnsubscribeFullScreenEnteredHandler(EventToken token);
+
+        Window& RegisterFullScreenExitedHandler(WindowHandler handler);
+        [[nodiscard]] EventToken SubscribeFullScreenExitedHandler(WindowHandler handler);
+        bool UnsubscribeFullScreenExitedHandler(EventToken token);
+
+        Window& RegisterStateChangedHandler(StateChangedHandler handler);
+        [[nodiscard]] EventToken SubscribeStateChangedHandler(StateChangedHandler handler);
+        bool UnsubscribeStateChangedHandler(EventToken token);
+
+        Window& RegisterWebMessageReceivedHandler(WebMessageReceivedHandler handler);
+        [[nodiscard]] EventToken SubscribeWebMessageReceivedHandler(WebMessageReceivedHandler handler);
+        bool UnsubscribeWebMessageReceivedHandler(EventToken token);
+
+        Window& RegisterNavigationStartingHandler(NavigationStartingHandler handler);
+        [[nodiscard]] EventToken SubscribeNavigationStartingHandler(NavigationStartingHandler handler);
+        bool UnsubscribeNavigationStartingHandler(EventToken token);
+
+        Window& RegisterNewWindowRequestedHandler(NewWindowRequestedHandler handler);
+        [[nodiscard]] EventToken SubscribeNewWindowRequestedHandler(NewWindowRequestedHandler handler);
+        bool UnsubscribeNewWindowRequestedHandler(EventToken token);
+
+        Window& RegisterContentLoadingHandler(ContentLoadingHandler handler);
+        [[nodiscard]] EventToken SubscribeContentLoadingHandler(ContentLoadingHandler handler);
+        bool UnsubscribeContentLoadingHandler(EventToken token);
+
+        Window& RegisterContentLoadedHandler(ContentLoadedHandler handler);
+        [[nodiscard]] EventToken SubscribeContentLoadedHandler(ContentLoadedHandler handler);
+        bool UnsubscribeContentLoadedHandler(EventToken token);
+
+        Window& RegisterInitialContentLoadedHandler(ContentLoadedHandler handler);
+        [[nodiscard]] EventToken SubscribeInitialContentLoadedHandler(ContentLoadedHandler handler);
+        bool UnsubscribeInitialContentLoadedHandler(EventToken token);
 
     private:
         friend class Application;
@@ -45,5 +283,6 @@ namespace photinox
         std::unique_ptr<Impl> impl_;
 
         void InternalClose();
+        void InitializeCore(bool showOnInitialize);
     };
 }

@@ -50,7 +50,7 @@ namespace photinox
         std::string iconPath;
         std::string notificationRegistrationId = "PhotinoX";
 
-        Window* mainWindow = nullptr;
+        std::atomic<Window*> mainWindow = nullptr;
 
         ShutdownMode shutdownMode = ShutdownMode::OnLastWindowClose;
 
@@ -404,7 +404,7 @@ namespace photinox
             }
         }
 
-    };
+    }; // class Application::Impl
 
     Application::Application()
     {
@@ -435,16 +435,14 @@ namespace photinox
         g_applicationCreated.store(false, std::memory_order_release);
     }
 
-    native::Library& Application::NativeLibrary() noexcept
+    // Properties
+
+    native::Library& Application::NativeLibrary() const noexcept
     {
         return impl_->library;
     }
 
-    void Application::ThrowIfRunning(std::string_view memberName) const
-    {
-        if (IsRunning())
-            throw std::logic_error(std::string(memberName) + " cannot be used after the application has started.");
-    }
+    // Name
 
     std::string_view Application::Name() const noexcept
     {
@@ -459,6 +457,8 @@ namespace photinox
         return *this;
     }
 
+    // IconPath
+
     std::string_view Application::IconPath() const noexcept
     {
         return impl_->iconPath;
@@ -471,6 +471,8 @@ namespace photinox
         impl_->iconPath = iconPath;
         return *this;
     }
+
+    // NotificationsEnabled
 
     bool Application::NotificationsEnabled() const
     {
@@ -497,6 +499,8 @@ namespace photinox
         return *this;
     }
 
+    // NotificationRegistrationId
+
     std::string_view Application::NotificationRegistrationId() const noexcept
     {
         return impl_->notificationRegistrationId;
@@ -510,6 +514,7 @@ namespace photinox
         return *this;
     }
 
+    // ShutdownMode
 
     ShutdownMode Application::GetShutdownMode() const noexcept
     {
@@ -528,10 +533,26 @@ namespace photinox
         return *this;
     }
 
+    // MainWindow
+
     Window* Application::MainWindow() const noexcept
     {
-        return impl_->mainWindow;
+        return impl_->mainWindow.load(std::memory_order_acquire);
     }
+
+    Application& Application::SetMainWindow(Window* mainWindow)
+    {
+        if (IsRunning())
+            GetDispatcher().VerifyAccess();
+
+        if (IsShuttingDown())
+            throw std::logic_error("Cannot change the main window while the application is shutting down.");
+
+        impl_->mainWindow.store(mainWindow, std::memory_order_release);
+        return *this;
+    }
+
+    // Windows
 
     WindowCollection& Application::Windows() noexcept
     {
@@ -569,18 +590,37 @@ namespace photinox
         return *impl_->dispatcher;
     }
 
+    // Methods
+
+    void Application::ThrowIfRunning(std::string_view memberName) const
+    {
+        if (IsRunning())
+            throw std::logic_error(std::string(memberName) + " cannot be used after the application has started.");
+    }
+
     int Application::Run(Window* mainWindow)
     {
         if (impl_->isRunning.exchange(true, std::memory_order_acq_rel))
             throw std::logic_error("The application is already running.");
 
         impl_->callbackException = nullptr;
-        impl_->mainWindow = mainWindow;
 
         try
         {
             if (mainWindow)
-                mainWindow->Show();
+            {
+                Window* previousMainWindow = impl_->mainWindow.exchange(mainWindow, std::memory_order_acq_rel);
+
+                try
+                {
+                    mainWindow->Show();
+                }
+                catch (...)
+                {
+                    impl_->mainWindow.store(previousMainWindow, std::memory_order_release);
+                    throw;
+                }
+            }
 
             auto params = impl_->CreateInitParams(this);
             const int exitCode = impl_->library.ApplicationRun(&params);
@@ -592,7 +632,7 @@ namespace photinox
             if (impl_->callbackException)
                 std::rethrow_exception(impl_->callbackException);
 
-            impl_->mainWindow = nullptr;
+            impl_->mainWindow.store(nullptr, std::memory_order_release);
             impl_->isRunning.store(false, std::memory_order_release);
 
             return exitCode;
@@ -600,7 +640,7 @@ namespace photinox
         catch (...)
         {
             impl_->ClearNotificationStates();
-            impl_->mainWindow = nullptr;
+            impl_->mainWindow.store(nullptr, std::memory_order_release);
             impl_->isRunning.store(false, std::memory_order_release);
             throw;
         }
@@ -644,10 +684,11 @@ namespace photinox
         assert(GetDispatcher().CheckAccess());
         assert(!impl_->windows->Contains(window));
 
-        const bool isMainWindow = impl_->mainWindow == &window;
+        Window* mainWindow = impl_->mainWindow.load(std::memory_order_acquire);
+        const bool isMainWindow = mainWindow == &window;
 
         if (isMainWindow)
-            impl_->mainWindow = nullptr;
+            impl_->mainWindow.store(nullptr, std::memory_order_release);
 
         if (impl_->shutdownMode == ShutdownMode::OnExplicitShutdown)
             return;
