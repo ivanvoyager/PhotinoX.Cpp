@@ -123,6 +123,7 @@ namespace photinox
         NewWindowRequestedHandlerList newWindowRequestedHandlers;
         ContentLoadingHandlerList contentLoadingHandlers;
         ContentLoadedHandlerList contentLoadedHandlers;
+        ContentLoadedHandlerList initialContentLoadedHandlers;
 
         EventSubscriptionRegistry eventSubscriptions;
 
@@ -145,10 +146,12 @@ namespace photinox
         std::unordered_map<std::uint64_t, NewWindowRequestedHandlerList::Handle> newWindowRequestedHandlerSubscriptions;
         std::unordered_map<std::uint64_t, ContentLoadingHandlerList::Handle> contentLoadingHandlerSubscriptions;
         std::unordered_map<std::uint64_t, ContentLoadedHandlerList::Handle> contentLoadedHandlerSubscriptions;
+        std::unordered_map<std::uint64_t, ContentLoadedHandlerList::Handle> initialContentLoadedHandlerSubscriptions;
 
         bool isCreating = false;
         bool isClosed = false;
         bool forceClose = false;
+        bool initialContentLoadedRaised = false;
 
         native::WindowInitParams CreateInitParams(Window* window, bool showOnInitialize) noexcept
         {
@@ -522,7 +525,7 @@ namespace photinox
             });
         }
 
-        static void WebMessageReceivedCallback(const char* message, const char* uri, void* state) noexcept
+        static void WebMessageReceivedCallback(native::Utf8String message, native::Utf8String uri, void* state) noexcept
         {
             auto& window = *static_cast<Window*>(state);
             auto& impl = *window.impl_;
@@ -545,7 +548,7 @@ namespace photinox
             });
         }
 
-        static bool NavigationStartingCallback(const char* uri, void* state) noexcept
+        static bool NavigationStartingCallback(native::Utf8String uri, void* state) noexcept
         {
             auto& window = *static_cast<Window*>(state);
             auto& impl = *window.impl_;
@@ -562,7 +565,7 @@ namespace photinox
             });
         }
 
-        static bool NewWindowRequestedCallback(const char* uri, void* state) noexcept
+        static bool NewWindowRequestedCallback(native::Utf8String uri, void* state) noexcept
         {
             auto& window = *static_cast<Window*>(state);
             auto& impl = *window.impl_;
@@ -579,7 +582,7 @@ namespace photinox
             });
         }
 
-        static void ContentLoadingCallback(const char* uri, void* state) noexcept
+        static void ContentLoadingCallback(native::Utf8String uri, void* state) noexcept
         {
             auto& window = *static_cast<Window*>(state);
             auto& impl = *window.impl_;
@@ -595,7 +598,7 @@ namespace photinox
             });
         }
 
-        static void ContentLoadedCallback(const char* uri, void* state) noexcept
+        static void ContentLoadedCallback(native::Utf8String uri, void* state) noexcept
         {
             auto& window = *static_cast<Window*>(state);
             auto& impl = *window.impl_;
@@ -606,6 +609,20 @@ namespace photinox
                 {
                     .uri = uri ? uri : ""
                 };
+
+                if (!impl.initialContentLoadedRaised)
+                {
+                    impl.initialContentLoadedRaised = true;
+
+                    try
+                    {
+                        impl.initialContentLoadedHandlers(args);
+                    }
+                    catch (...)
+                    {
+                        impl.application.OnUnhandledException(std::current_exception());
+                    }
+                }
 
                 impl.contentLoadedHandlers(args);
             });
@@ -2265,7 +2282,6 @@ namespace photinox
     EventToken Window::SubscribeNavigationStartingHandler(NavigationStartingHandler handler)
     {
         impl_->ThrowIfClosed("SubscribeNavigationStartingHandler");
-
         return impl_->eventSubscriptions.Subscribe(impl_->navigationStartingHandlers, impl_->navigationStartingHandlerSubscriptions, std::move(handler));
     }
 
@@ -2286,7 +2302,6 @@ namespace photinox
     EventToken Window::SubscribeNewWindowRequestedHandler(NewWindowRequestedHandler handler)
     {
         impl_->ThrowIfClosed("SubscribeNewWindowRequestedHandler");
-
         return impl_->eventSubscriptions.Subscribe(impl_->newWindowRequestedHandlers,  impl_->newWindowRequestedHandlerSubscriptions,  std::move(handler));
     }
 
@@ -2307,7 +2322,6 @@ namespace photinox
     EventToken Window::SubscribeContentLoadingHandler(ContentLoadingHandler handler)
     {
         impl_->ThrowIfClosed("SubscribeContentLoadingHandler");
-
         return impl_->eventSubscriptions.Subscribe(impl_->contentLoadingHandlers, impl_->contentLoadingHandlerSubscriptions, std::move(handler));
     }
 
@@ -2328,12 +2342,31 @@ namespace photinox
     EventToken Window::SubscribeContentLoadedHandler(ContentLoadedHandler handler)
     {
         impl_->ThrowIfClosed("SubscribeContentLoadedHandler");
-
         return impl_->eventSubscriptions.Subscribe(impl_->contentLoadedHandlers, impl_->contentLoadedHandlerSubscriptions, std::move(handler));
     }
 
     bool Window::UnsubscribeContentLoadedHandler(EventToken token)
     {
         return impl_->eventSubscriptions.Unsubscribe(impl_->contentLoadedHandlers, impl_->contentLoadedHandlerSubscriptions, token);
+    }
+
+    // InitialContentLoaded Handlers
+
+    Window& Window::RegisterInitialContentLoadedHandler(ContentLoadedHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterInitialContentLoadedHandler");
+        RegisterEventHandler(impl_->initialContentLoadedHandlers, std::move(handler));
+        return *this;
+    }
+
+    EventToken Window::SubscribeInitialContentLoadedHandler(ContentLoadedHandler handler)
+    {
+        impl_->ThrowIfClosed("SubscribeInitialContentLoadedHandler");
+        return impl_->eventSubscriptions.Subscribe(impl_->initialContentLoadedHandlers, impl_->initialContentLoadedHandlerSubscriptions, std::move(handler));
+    }
+
+    bool Window::UnsubscribeInitialContentLoadedHandler(EventToken token)
+    {
+        return impl_->eventSubscriptions.Unsubscribe(impl_->initialContentLoadedHandlers, impl_->initialContentLoadedHandlerSubscriptions, token);
     }
 }

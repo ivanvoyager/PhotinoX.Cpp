@@ -267,6 +267,10 @@ namespace photinox
         [[nodiscard]] EventToken SubscribeContentLoadedHandler(ContentLoadedHandler handler);
         bool UnsubscribeContentLoadedHandler(EventToken token);
 
+        Window& RegisterInitialContentLoadedHandler(ContentLoadedHandler handler);
+        [[nodiscard]] EventToken SubscribeInitialContentLoadedHandler(ContentLoadedHandler handler);
+        bool UnsubscribeInitialContentLoadedHandler(EventToken token);
+
     private:
         friend class Application;
 
