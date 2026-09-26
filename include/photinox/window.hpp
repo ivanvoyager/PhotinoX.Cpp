@@ -177,6 +177,7 @@ namespace photinox
 
         [[nodiscard]] bool IsInitialized() const noexcept;
         [[nodiscard]] bool IsClosed() const noexcept;
+        [[nodiscard]] bool IsVisible() const;
 
         [[nodiscard]] Application& GetApplication() const noexcept;
         [[nodiscard]] Dispatcher& GetDispatcher() noexcept;
@@ -185,7 +186,9 @@ namespace photinox
 
         // Lifecycle methods
 
+        void Initialize();
         void Show();
+        void Hide();
         void Close();
 
         Window& RegisterCreatingHandler(WindowHandler handler);
@@ -271,5 +274,6 @@ namespace photinox
         std::unique_ptr<Impl> impl_;
 
         void InternalClose();
+        void InitializeCore(bool showOnInitialize);
     };
 }

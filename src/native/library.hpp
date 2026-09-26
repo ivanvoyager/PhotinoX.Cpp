@@ -43,6 +43,7 @@ namespace photinox::native
         //window
         [[nodiscard]] void* WindowCreate(WindowInitParams* initParams) const;
         [[nodiscard]] bool WindowShow(void* instance) const;
+        [[nodiscard]] bool WindowHide(void* instance) const noexcept;
         [[nodiscard]] bool WindowCenter(void* instance) const noexcept;
         [[nodiscard]] bool WindowActivate(void* instance) const noexcept;
         [[nodiscard]] bool WindowMaximize(void* instance) const noexcept;
@@ -82,6 +83,8 @@ namespace photinox::native
 
         [[nodiscard]] bool WindowGetTopmost(void* instance) const noexcept;
         void WindowSetTopmost(void* instance, bool topmost) const noexcept;
+
+        [[nodiscard]] bool WindowGetVisible(void* instance) const noexcept;
 
         //browser
         void WindowNavigateToString(void* instance, const char* content) const noexcept;
@@ -143,6 +146,7 @@ namespace photinox::native
         //window
         void* (*windowCreate_)(WindowInitParams*) = nullptr;
         bool (*windowShow_)(void*) = nullptr;
+        bool (*windowHide_)(void*) = nullptr;
         bool (*windowCenter_)(void*) = nullptr;
         bool (*windowActivate_)(void*) = nullptr;
         bool (*windowMaximize_)(void*) = nullptr;
@@ -182,6 +186,8 @@ namespace photinox::native
 
         void (*windowGetTopmost_)(void*, bool*) = nullptr;
         void (*windowSetTopmost_)(void*, bool) = nullptr;
+
+        void (*windowGetVisible_)(void*, bool*) = nullptr;
 
         //browser
         void (*windowNavigateToString_)(void*, const char*) = nullptr;

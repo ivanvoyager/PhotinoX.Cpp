@@ -75,6 +75,7 @@ namespace photinox::native
             //window
             windowCreate_ = LoadExport<decltype(windowCreate_)>("Photino_ctor");
             windowShow_ = LoadExport<decltype(windowShow_)>("Photino_Show");
+            windowHide_ = LoadExport<decltype(windowHide_)>("Photino_Hide");
             windowCenter_ = LoadExport<decltype(windowCenter_)>("Photino_Center");
             windowActivate_ = LoadExport<decltype(windowActivate_)>("Photino_Activate");
             windowMaximize_ = LoadExport<decltype(windowMaximize_)>("Photino_Maximize");
@@ -114,6 +115,8 @@ namespace photinox::native
 
             windowGetTopmost_ = LoadExport<decltype(windowGetTopmost_)>("Photino_GetTopmost");
             windowSetTopmost_ = LoadExport<decltype(windowSetTopmost_)>("Photino_SetTopmost");
+
+            windowGetVisible_ = LoadExport<decltype(windowGetVisible_)>("Photino_GetVisible");
 
             //browser
             windowNavigateToString_ = LoadExport<decltype(windowNavigateToString_)>("Photino_NavigateToString");
@@ -243,6 +246,11 @@ namespace photinox::native
     bool Library::WindowShow(void* instance) const
     {
         return windowShow_(instance);
+    }
+
+    bool Library::WindowHide(void* instance) const noexcept
+    {
+        return windowHide_(instance);
     }
 
     bool Library::WindowCenter(void* instance) const noexcept
@@ -429,6 +437,13 @@ namespace photinox::native
     void Library::WindowSetTopmost(void* instance, bool topmost) const noexcept
     {
         windowSetTopmost_(instance, topmost);
+    }
+
+    bool Library::WindowGetVisible(void* instance) const noexcept
+    {
+        bool visible = false;
+        windowGetVisible_(instance, &visible);
+        return visible;
     }
 
     // browser

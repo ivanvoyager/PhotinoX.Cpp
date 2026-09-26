@@ -150,7 +150,7 @@ namespace photinox
         bool isClosed = false;
         bool forceClose = false;
 
-        native::WindowInitParams CreateInitParams(Window* window) noexcept
+        native::WindowInitParams CreateInitParams(Window* window, bool showOnInitialize) noexcept
         {
             native::WindowInitParams params{};
 
@@ -185,9 +185,10 @@ namespace photinox
 
             params.window.title = title.c_str();
             params.window.iconFile = iconFile.empty() ? nullptr : iconFile.c_str();
-
+            params.window.chromeless = false;
             params.window.transparent = transparent;
             params.window.useNativeWindowOwner = useNativeWindowOwner;
+            params.window.showOnInitialize = showOnInitialize;
 
             params.linuxChromeless.resizeBorderThickness = 8;
 
@@ -225,6 +226,47 @@ namespace photinox
             params.browser.ignoreCertificateErrorsEnabled = ignoreCertificateErrorsEnabled;
 
             return params;
+        }
+
+        void ValidateStartupParameters() const
+        {
+            if (startString.empty() && startUrl.empty())
+            {
+                throw std::invalid_argument("An initial URL or HTML string must be supplied with Load or LoadString.");
+            }
+
+            if (!startString.empty() && !startUrl.empty())
+                throw std::invalid_argument("StartString and StartUrl cannot be specified at the same time.");
+
+            if (!IsValidWindowState(windowState))
+                throw std::invalid_argument("windowState");
+
+            if (centerOnInitialize && useOsDefaultLocation)
+                throw std::invalid_argument("CenterOnInitialize cannot be used with UseOsDefaultLocation.");
+
+            if (size.width < 0)
+                throw std::invalid_argument("width");
+
+            if (size.height < 0)
+                throw std::invalid_argument("height");
+
+            if (minSize.width < 0)
+                throw std::invalid_argument("minWidth");
+
+            if (minSize.height < 0)
+                throw std::invalid_argument("minHeight");
+
+            if (maxSize.width < 0)
+                throw std::invalid_argument("maxWidth");
+
+            if (maxSize.height < 0)
+                throw std::invalid_argument("maxHeight");
+
+            if (minSize.width > maxSize.width)
+                throw std::invalid_argument("minWidth");
+
+            if (minSize.height > maxSize.height)
+                throw std::invalid_argument("minHeight");
         }
 
         void ThrowIfClosed(std::string_view memberName) const
@@ -1774,6 +1816,17 @@ namespace photinox
         return impl_->isClosed;
     }
 
+    bool Window::IsVisible() const
+    {
+        if (!impl_->nativeInstance)
+            return false;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetVisible(impl_->nativeInstance);
+        });
+    }
+
     Application& Window::GetApplication() const noexcept
     {
         return impl_->application;
@@ -1805,22 +1858,17 @@ namespace photinox
         Close();
     }
 
-    void Window::Show()
+    void Window::Initialize()
     {
-        impl_->ThrowIfClosed("Show");
+        InitializeCore(false);
+    }
+
+    void Window::InitializeCore(bool showOnInitialize)
+    {
+        impl_->ThrowIfClosed("Initialize");
 
         if (impl_->nativeInstance)
-        {
-            const bool shown = GetDispatcher().Invoke([this]
-            {
-                return impl_->NativeLibrary().WindowShow(impl_->nativeInstance);
-            });
-
-            if (!shown)
-                throw std::runtime_error("Failed to show the window.");
-
             return;
-        }
 
         if (impl_->isCreating)
             throw std::logic_error("The window is already being created.");
@@ -1841,18 +1889,9 @@ namespace photinox
 
         impl_->isCreating = false;
 
-        if (impl_->startString.empty() && impl_->startUrl.empty())
-        {
-            throw std::invalid_argument("An initial URL or HTML string must be supplied with Load or LoadString.");
-        }
+        impl_->ValidateStartupParameters();
 
-        if (!impl_->startString.empty() && !impl_->startUrl.empty())
-        {
-            throw std::invalid_argument("StartString and StartUrl cannot be specified at the same time.");
-        }
-
-        auto params = impl_->CreateInitParams(this);
-
+        auto params = impl_->CreateInitParams(this, showOnInitialize);
         void* nativeInstance = impl_->NativeLibrary().WindowCreate(&params);
 
         assert(impl_->nativeInstance == nativeInstance);
@@ -1861,6 +1900,45 @@ namespace photinox
             throw std::runtime_error("Native window creation failed.");
 
         impl_->nativeInstance = nativeInstance;
+    }
+
+    void Window::Show()
+    {
+        impl_->ThrowIfClosed("Show");
+
+        if (!impl_->nativeInstance)
+        {
+            InitializeCore(true);
+            return;
+        }
+
+        const bool shown = GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowShow(impl_->nativeInstance);
+        });
+
+        assert(shown);
+
+        if (!shown)
+            throw std::runtime_error("Failed to show the window.");
+    }
+
+    void Window::Hide()
+    {
+        impl_->ThrowIfClosed("Hide");
+
+        if (!impl_->nativeInstance)
+            return;
+
+        const bool hidden = GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowHide(impl_->nativeInstance);
+        });
+
+        assert(hidden);
+
+        if (!hidden)
+            throw std::runtime_error("Failed to hide the window.");
     }
 
     void Window::Close()
