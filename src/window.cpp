@@ -273,10 +273,12 @@ namespace photinox
 #ifdef _WIN32
             if (chromeless && (useOsDefaultLocation || useOsDefaultSize))
             {
-                throw std::invalid_argument(
-                    "Chromeless cannot be used with UseOsDefaultLocation or "
-                    "UseOsDefaultSize on Windows. Size and location must be specified.");
+                throw std::invalid_argument("Chromeless cannot be used with UseOsDefaultLocation or "
+                                            "UseOsDefaultSize on Windows. Size and location must be specified.");
             }
+
+            if (transparent && !chromeless)
+                throw std::invalid_argument("Transparent windows must be chromeless on Windows.");
 #endif
         }
 
@@ -1424,8 +1426,12 @@ namespace photinox
             return *this;
         }
 
-#if defined(_WIN32) || defined(__APPLE__)
-        throw std::runtime_error("SetTransparent cannot be called on Windows or macOS after the window has been initialized.");
+#ifdef _WIN32
+        if (transparent && !impl_->chromeless)
+            throw std::runtime_error("Transparent windows must be chromeless on Windows.");
+
+        if (transparent && !impl_->transparent)
+            throw std::runtime_error("Transparency must be enabled before window initialization on Windows.");
 #endif
 
         GetDispatcher().Invoke([this, transparent]
@@ -1823,10 +1829,6 @@ namespace photinox
     Window& Window::ClearBrowserAutoFill()
     {
         impl_->ThrowIfClosedOrNotInitialized("ClearBrowserAutoFill");
-
-#ifndef _WIN32
-        throw std::runtime_error("ClearBrowserAutoFill is only supported on Windows.");
-#endif
 
         GetDispatcher().Invoke([this]
         {
