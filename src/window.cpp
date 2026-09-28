@@ -53,6 +53,9 @@ namespace photinox
         std::string iconFile;
         std::string startString;
         std::string startUrl;
+        std::string userDataFolder;
+        std::string userAgent;
+        std::string browserControlInitParameters;
 
         Point location;
         Size size;
@@ -212,6 +215,9 @@ namespace photinox
 
             params.browser.startString = startString.empty() ? nullptr : startString.c_str();
             params.browser.startUrl = startUrl.empty() ? nullptr : startUrl.c_str();
+            params.browser.userDataFolder = userDataFolder.empty() ? nullptr : userDataFolder.c_str();
+            params.browser.userAgent = userAgent.empty() ? nullptr : userAgent.c_str();            
+            params.browser.controlInitParameters = browserControlInitParameters.empty() ? nullptr : browserControlInitParameters.c_str();
 
             params.browser.zoom = zoom;
             params.browser.zoomEnabled = zoomEnabled;
@@ -1666,6 +1672,40 @@ namespace photinox
         return *this;
     }
 
+    // UserAgent
+
+    std::string Window::UserAgent() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->userAgent;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetUserAgent(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetUserAgent(std::string_view userAgent)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetUserAgent");
+        impl_->userAgent = userAgent;
+        return *this;
+    }
+
+    // BrowserControlInitParameters
+
+    std::string_view Window::BrowserControlInitParameters() const noexcept
+    {
+        return impl_->browserControlInitParameters;
+    }
+
+    Window& Window::SetBrowserControlInitParameters(std::string_view parameters)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetBrowserControlInitParameters");
+        impl_->browserControlInitParameters = parameters;
+        return *this;
+    }
+
     // GrantBrowserPermissions
 
     bool Window::GrantBrowserPermissions() const
@@ -1784,26 +1824,6 @@ namespace photinox
         return *this;
     }
 
-    // SmoothScrollingEnabled
-
-    bool Window::SmoothScrollingEnabled() const
-    {
-        if (!impl_->nativeInstance)
-            return impl_->smoothScrollingEnabled;
-
-        return GetDispatcher().Invoke([this]
-        {
-            return impl_->NativeLibrary().WindowGetSmoothScrollingEnabled(impl_->nativeInstance);
-        });
-    }
-
-    Window& Window::SetSmoothScrollingEnabled(bool enabled)
-    {
-        impl_->ThrowIfClosedOrInitialized("SetSmoothScrollingEnabled");
-        impl_->smoothScrollingEnabled = enabled;
-        return *this;
-    }
-
     // IgnoreCertificateErrorsEnabled
 
     bool Window::IgnoreCertificateErrorsEnabled() const
@@ -1824,11 +1844,49 @@ namespace photinox
         return *this;
     }
 
+    // SmoothScrollingEnabled
+
+    bool Window::SmoothScrollingEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->smoothScrollingEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetSmoothScrollingEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetSmoothScrollingEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetSmoothScrollingEnabled");
+        impl_->smoothScrollingEnabled = enabled;
+        return *this;
+    }
+
     // Features
+
+    // UserDataFolder
+
+    std::string_view Window::UserDataFolder() const noexcept
+    {
+        return impl_->userDataFolder;
+    }
+
+    Window& Window::SetUserDataFolder(std::string_view userDataFolder)
+    {
+        impl_->ThrowIfClosedOrInitialized("SetUserDataFolder");
+        impl_->userDataFolder = userDataFolder;
+        return *this;
+    }
 
     Window& Window::ClearBrowserAutoFill()
     {
         impl_->ThrowIfClosedOrNotInitialized("ClearBrowserAutoFill");
+
+#if !defined(_WIN32)
+        throw std::runtime_error("ClearBrowserAutoFill is only supported on Windows.");
+#endif
 
         GetDispatcher().Invoke([this]
         {

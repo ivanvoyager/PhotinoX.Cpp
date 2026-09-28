@@ -150,6 +150,7 @@ namespace photinox::native
             windowGetSmoothScrollingEnabled_ = LoadExport<decltype(windowGetSmoothScrollingEnabled_)>("Photino_GetSmoothScrollingEnabled");
             windowGetIgnoreCertificateErrorsEnabled_ = LoadExport<decltype(windowGetIgnoreCertificateErrorsEnabled_)>("Photino_GetIgnoreCertificateErrorsEnabled");
 
+            windowGetUserAgent_ = LoadExport<decltype(windowGetUserAgent_)>("Photino_GetUserAgent");
             windowClearBrowserAutoFill_ = LoadExport<decltype(windowClearBrowserAutoFill_)>("Photino_ClearBrowserAutoFill");
         }
         catch (...)
@@ -591,6 +592,26 @@ namespace photinox::native
         bool enabled = false;
         windowGetIgnoreCertificateErrorsEnabled_(instance, &enabled);
         return enabled;
+    }
+
+    std::string Library::WindowGetUserAgent(void* instance) const
+    {
+        char* value = windowGetUserAgent_(instance);
+
+        if (!value)
+            return {};
+
+        try
+        {
+            std::string result(value);
+            FreeString(value);
+            return result;
+        }
+        catch (...)
+        {
+            FreeString(value);
+            throw;
+        }
     }
 
     void Library::WindowClearBrowserAutoFill(void* instance) const noexcept

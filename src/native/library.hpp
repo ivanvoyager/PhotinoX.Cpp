@@ -119,6 +119,7 @@ namespace photinox::native
         [[nodiscard]] bool WindowGetSmoothScrollingEnabled(void* instance) const noexcept;
         [[nodiscard]] bool WindowGetIgnoreCertificateErrorsEnabled(void* instance) const noexcept;
 
+        [[nodiscard]] std::string WindowGetUserAgent(void* instance) const;
         void WindowClearBrowserAutoFill(void* instance) const noexcept;
 
     private:
@@ -222,6 +223,7 @@ namespace photinox::native
         void (*windowGetSmoothScrollingEnabled_)(void*, bool*) = nullptr;
         void (*windowGetIgnoreCertificateErrorsEnabled_)(void*, bool*) = nullptr;
 
+        char* (*windowGetUserAgent_)(void*) = nullptr;
         void (*windowClearBrowserAutoFill_)(void*) = nullptr;
     };
 }

@@ -150,6 +150,12 @@ namespace photinox
         [[nodiscard]] int Zoom() const;
         Window& SetZoom(int zoom);
 
+        [[nodiscard]] std::string UserAgent() const;
+        Window& SetUserAgent(std::string_view userAgent);
+
+        [[nodiscard]] std::string_view BrowserControlInitParameters() const noexcept;
+        Window& SetBrowserControlInitParameters(std::string_view parameters);
+
         [[nodiscard]] bool GrantBrowserPermissions() const;
         Window& SetGrantBrowserPermissions(bool grant);
 
@@ -168,11 +174,14 @@ namespace photinox
         [[nodiscard]] bool MediaStreamEnabled() const;
         Window& SetMediaStreamEnabled(bool enabled);
 
+        [[nodiscard]] bool IgnoreCertificateErrorsEnabled() const;
+        Window& SetIgnoreCertificateErrorsEnabled(bool enabled);
+
         [[nodiscard]] bool SmoothScrollingEnabled() const;
         Window& SetSmoothScrollingEnabled(bool enabled);
 
-        [[nodiscard]] bool IgnoreCertificateErrorsEnabled() const;
-        Window& SetIgnoreCertificateErrorsEnabled(bool enabled);
+        [[nodiscard]] std::string_view UserDataFolder() const noexcept;
+        Window& SetUserDataFolder(std::string_view userDataFolder);
 
         Window& ClearBrowserAutoFill();
 
