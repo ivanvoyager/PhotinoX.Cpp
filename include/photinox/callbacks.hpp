@@ -4,6 +4,7 @@
 
 #include <exception>
 #include <functional>
+#include <string_view>
 
 namespace photinox
 {
@@ -37,4 +38,6 @@ namespace photinox
     using NewWindowRequestedHandler = std::function<void(const NewWindowRequestedEventArgs& args)>;
     using ContentLoadingHandler = std::function<void(const ContentLoadingEventArgs& args)>;
     using ContentLoadedHandler = std::function<void(const ContentLoadedEventArgs& args)>;
+
+    using CustomSchemeHandler = std::function<CustomSchemeResponse(std::string_view scheme, std::string_view url)>;
 }

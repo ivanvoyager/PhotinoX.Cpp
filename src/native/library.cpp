@@ -56,7 +56,11 @@ namespace photinox::native
             getVersion_ = LoadExport<decltype(getVersion_)>("Photino_GetNativeVersion");
 
             //memory
+            allocateMemory_ = LoadExport<decltype(allocateMemory_)>("Photino_AllocateMemory");
+            freeMemory_ = LoadExport<decltype(freeMemory_)>("Photino_FreeMemory");
+            allocateString_ = LoadExport<decltype(allocateString_)>("Photino_AllocateString");
             freeString_ = LoadExport<decltype(freeString_)>("Photino_FreeString");
+            freeStringArray_ = LoadExport<decltype(freeStringArray_)>("Photino_FreeStringArray");
 
             //application
             applicationRun_ = LoadExport<decltype(applicationRun_)>("PhotinoApplication_Run");
@@ -125,6 +129,7 @@ namespace photinox::native
             windowNavigateToString_ = LoadExport<decltype(windowNavigateToString_)>("Photino_NavigateToString");
             windowNavigateToUrl_ = LoadExport<decltype(windowNavigateToUrl_)>("Photino_NavigateToUrl");
             windowSendWebMessage_ = LoadExport<decltype(windowSendWebMessage_)>("Photino_SendWebMessage");
+            windowAddCustomSchemeName_ = LoadExport<decltype(windowAddCustomSchemeName_)>("Photino_AddCustomSchemeName");
 
             windowGetContextMenuEnabled_ = LoadExport<decltype(windowGetContextMenuEnabled_)>("Photino_GetContextMenuEnabled");
             windowSetContextMenuEnabled_ = LoadExport<decltype(windowSetContextMenuEnabled_)>("Photino_SetContextMenuEnabled");
@@ -175,10 +180,29 @@ namespace photinox::native
 
     //memory
 
+    void* Library::AllocateMemory(int size) const noexcept
+    {
+        return allocateMemory_(size);
+    }
+
+    void Library::FreeMemory(void* value) const noexcept
+    {
+        freeMemory_(value);
+    }
+
+    char* Library::AllocateString(int size) const noexcept
+    {
+        return allocateString_(size);
+    }
+
     void Library::FreeString(char* value) const noexcept
     {
-        if (value)
-            freeString_(value);
+        freeString_(value);
+    }
+
+    void Library::FreeStringArray(char** values, int count) const noexcept
+    {
+        freeStringArray_(values, count);
     }
 
     //application
@@ -304,7 +328,7 @@ namespace photinox::native
         }
     }
 
-    void Library::WindowSetTitle(void* instance, const char* title) const noexcept
+    void Library::WindowSetTitle(void* instance, Utf8String title) const noexcept
     {
         windowSetTitle_(instance, title);
     }
@@ -329,7 +353,7 @@ namespace photinox::native
         }
     }
 
-    void Library::WindowSetIconFile(void* instance, const char* iconFile) const noexcept
+    void Library::WindowSetIconFile(void* instance, Utf8String iconFile) const noexcept
     {
         windowSetIconFile_(instance, iconFile);
     }
@@ -463,19 +487,24 @@ namespace photinox::native
 
     // browser
 
-    void Library::WindowNavigateToString(void* instance, const char* content) const noexcept
+    void Library::WindowNavigateToString(void* instance, Utf8String content) const noexcept
     {
         windowNavigateToString_(instance, content);
     }
 
-    void Library::WindowNavigateToUrl(void* instance, const char* url) const noexcept
+    void Library::WindowNavigateToUrl(void* instance, Utf8String url) const noexcept
     {
         windowNavigateToUrl_(instance, url);
     }
 
-    void Library::WindowSendWebMessage(void* instance, const char* message) const noexcept
+    void Library::WindowSendWebMessage(void* instance, Utf8String message) const noexcept
     {
         windowSendWebMessage_(instance, message);
+    }
+
+    bool Library::WindowAddCustomSchemeName(void* instance, Utf8String scheme) const noexcept
+    {
+        return windowAddCustomSchemeName_(instance, scheme);
     }
 
     bool Library::WindowGetContextMenuEnabled(void* instance) const noexcept

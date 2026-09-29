@@ -4,8 +4,10 @@
 #include <photinox/geometry.hpp>
 
 #include <any>
+#include <cstddef>
 #include <span>
 #include <string>
+#include <vector>
 
 namespace photinox
 {
@@ -108,5 +110,11 @@ namespace photinox
     struct ContentLoadedEventArgs
     {
         std::string uri;
+    };
+
+    struct CustomSchemeResponse
+    {
+        std::vector<std::byte> content;
+        std::string contentType;
     };
 }

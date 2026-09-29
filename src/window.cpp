@@ -10,9 +10,13 @@
 
 #include <eventpp/callbacklist.h>
 
+#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cstdint>
+#include <cstring>
 #include <limits>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -35,6 +39,53 @@ namespace photinox
                     return false;
             }
         }
+
+        std::string NormalizeScheme(std::string_view scheme)
+        {
+            std::string result(scheme);
+
+            std::ranges::transform(result, result.begin(), [](unsigned char value)
+            {
+                return static_cast<char>(std::tolower(value));
+            });
+
+            return result;
+        }
+
+        bool IsAsciiAlpha(unsigned char character) noexcept
+        {
+            return (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z');
+        }
+
+        bool IsAsciiDigit(unsigned char character) noexcept
+        {
+            return character >= '0' && character <= '9';
+        }
+
+        bool IsValidSchemeName(std::string_view value) noexcept
+        {
+            if (value.empty() || !IsAsciiAlpha(static_cast<unsigned char>(value.front())))
+                return false;
+
+            for (const char valueChar : value.substr(1))
+            {
+                const unsigned char character = static_cast<unsigned char>(valueChar);
+
+                if (!IsAsciiAlpha(character) && !IsAsciiDigit(character) &&
+                    character != '+' && character != '-' && character != '.')
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        bool IsReservedScheme(std::string_view scheme) noexcept
+        {
+            return scheme == "http" || scheme == "https" || scheme == "file";
+        }
+
     } // namespace
 
     class Window::Impl final
@@ -93,6 +144,8 @@ namespace photinox
         bool mediaStreamEnabled = true;
         bool smoothScrollingEnabled = true;
         bool ignoreCertificateErrorsEnabled = false;
+
+        std::unordered_map<std::string, CustomSchemeHandler> customSchemes;
 
         using WindowHandlerList = eventpp::CallbackList<void()>;
         using ClosingHandlerList = eventpp::CallbackList<void(ClosingEventArgs&)>;
@@ -181,7 +234,7 @@ namespace photinox
             params.callbacks.fullScreenChangedHandler = FullScreenChangedCallback;
             params.callbacks.stateChangedHandler = StateChangedCallback;
             params.callbacks.webMessageReceivedHandler = WebMessageReceivedCallback;
-
+            params.callbacks.customSchemeHandler = CustomSchemeCallback;
             params.callbacks.navigationStartingHandler = NavigationStartingCallback;
             params.callbacks.newWindowRequestedHandler = NewWindowRequestedCallback;
             params.callbacks.contentLoadingHandler = ContentLoadingCallback;
@@ -233,6 +286,15 @@ namespace photinox
             params.browser.mediaStreamEnabled = mediaStreamEnabled;
             params.browser.smoothScrollingEnabled = smoothScrollingEnabled;
             params.browser.ignoreCertificateErrorsEnabled = ignoreCertificateErrorsEnabled;
+
+            std::size_t customSchemeIndex = 0;
+            for (const auto& [scheme, handler] : customSchemes)
+            {
+                assert(handler);
+                if (customSchemeIndex >= native::MaxCustomSchemeNames)
+                    break;
+                params.browser.customSchemeNames[customSchemeIndex++] = scheme.c_str();
+            }
 
             return params;
         }
@@ -335,6 +397,20 @@ namespace photinox
             catch (...)
             {
                 application.OnUnhandledException(std::current_exception());
+            }
+        }
+
+        template<typename TResult, typename TCallback>
+        static TResult InvokeEventResult(Application& application, TResult fallback, TCallback&& callback) noexcept
+        {
+            try
+            {
+                return std::forward<TCallback>(callback)();
+            }
+            catch (...)
+            {
+                application.OnUnhandledException(std::current_exception());
+                return fallback;
             }
         }
 
@@ -561,6 +637,83 @@ namespace photinox
                 };
 
                 impl.webMessageReceivedHandlers(args);
+            });
+        }
+
+        static void* CustomSchemeCallback(native::Utf8String url, int* numBytes, native::Utf8String* contentType, void* state) noexcept
+        {
+            assert(state);
+            assert(numBytes);
+            assert(contentType);
+
+            if (!state || !numBytes || !contentType)
+                return nullptr;
+
+            *numBytes = 0;
+            *contentType = nullptr;
+
+            auto& window = *static_cast<Window*>(state);
+            auto& impl = *window.impl_;
+
+            return InvokeEventResult(impl.application, static_cast<void*>(nullptr), [&impl, url, numBytes, contentType]() -> void*
+            {
+                if (!url || *url == '\0')
+                    return nullptr;
+
+                const std::string_view urlView(url);
+                const std::size_t colonPosition = urlView.find(':');
+                if (colonPosition == std::string_view::npos)
+                    return nullptr;
+
+                const std::string scheme = NormalizeScheme(urlView.substr(0, colonPosition));
+                if (IsReservedScheme(scheme))
+                    return nullptr;
+
+                const auto handlerIterator = impl.customSchemes.find(scheme);
+                if (handlerIterator == impl.customSchemes.end())
+                    return nullptr;
+
+                CustomSchemeResponse response = handlerIterator->second(scheme, urlView);
+
+                const std::size_t contentSize = response.content.size();
+                if (contentSize == 0 || contentSize > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+                    return nullptr;
+
+                auto& library = impl.NativeLibrary();
+
+                const int contentLength = static_cast<int>(contentSize);
+                void* responseBuffer = library.AllocateMemory(contentLength);
+
+                if (!responseBuffer)
+                    return nullptr;
+
+                if (!response.contentType.empty())
+                {
+                    const std::size_t contentTypeSize = response.contentType.size();
+                    if (contentTypeSize >= static_cast<std::size_t>(std::numeric_limits<int>::max()))
+                    {
+                        library.FreeMemory(responseBuffer);
+                        return nullptr;
+                    }
+
+                    char* responseContentType = library.AllocateString(static_cast<int>(contentTypeSize + 1));
+
+                    if (!responseContentType)
+                    {
+                        library.FreeMemory(responseBuffer);
+                        return nullptr;
+                    }
+
+                    std::memcpy(responseContentType, response.contentType.data(), contentTypeSize);
+                    responseContentType[contentTypeSize] = '\0';
+
+                    *contentType = responseContentType;
+                }
+
+                std::memcpy(responseBuffer, response.content.data(), contentSize);
+
+                *numBytes = contentLength;
+                return responseBuffer;
             });
         }
 
@@ -2457,5 +2610,55 @@ namespace photinox
     bool Window::UnsubscribeInitialContentLoadedHandler(EventToken token)
     {
         return impl_->eventSubscriptions.Unsubscribe(impl_->initialContentLoadedHandlers, impl_->initialContentLoadedHandlerSubscriptions, token);
+    }
+
+    Window& Window::RegisterCustomSchemeHandler(std::string_view scheme, CustomSchemeHandler handler)
+    {
+        impl_->ThrowIfClosed("RegisterCustomSchemeHandler");
+
+        if (!handler)
+            throw std::invalid_argument("A custom scheme handler must be provided.");
+
+        std::string normalizedScheme = NormalizeScheme(scheme);
+
+        if (normalizedScheme.empty())
+            throw std::invalid_argument("A custom scheme name must be provided.");
+
+        if (IsReservedScheme(normalizedScheme))
+            throw std::invalid_argument("HTTP, HTTPS, and file schemes cannot be registered as custom schemes.");
+
+        if (!IsValidSchemeName(normalizedScheme))
+            throw std::invalid_argument("Invalid custom scheme name.");
+
+        if (!impl_->nativeInstance)
+        {
+            if (!impl_->customSchemes.contains(normalizedScheme) && impl_->customSchemes.size() >= native::MaxCustomSchemeNames)
+                throw std::runtime_error("No more than 16 custom schemes can be registered before window initialization.");
+
+            impl_->customSchemes.insert_or_assign(std::move(normalizedScheme), std::move(handler));
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, normalizedScheme = std::move(normalizedScheme), handler = std::move(handler)]() mutable
+        {
+            auto iterator = impl_->customSchemes.find(normalizedScheme);
+
+            if (iterator != impl_->customSchemes.end())
+            {
+                iterator->second = std::move(handler);
+                return;
+            }
+
+            auto [insertedIterator, inserted] = impl_->customSchemes.emplace(normalizedScheme, std::move(handler));
+            assert(inserted);
+
+            if (!impl_->NativeLibrary().WindowAddCustomSchemeName(impl_->nativeInstance, insertedIterator->first.c_str()))
+            {
+                impl_->customSchemes.erase(insertedIterator);
+                throw std::runtime_error("Failed to register the custom scheme with the native WebView.");
+            }
+        });
+
+        return *this;
     }
 }

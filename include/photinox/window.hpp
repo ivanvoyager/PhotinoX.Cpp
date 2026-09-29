@@ -205,6 +205,8 @@ namespace photinox
         void Hide();
         void Close();
 
+        // Event handlers
+
         Window& RegisterCreatingHandler(WindowHandler handler);
         [[nodiscard]] EventToken SubscribeCreatingHandler(WindowHandler handler);
         bool UnsubscribeCreatingHandler(EventToken token);
@@ -284,6 +286,8 @@ namespace photinox
         Window& RegisterInitialContentLoadedHandler(ContentLoadedHandler handler);
         [[nodiscard]] EventToken SubscribeInitialContentLoadedHandler(ContentLoadedHandler handler);
         bool UnsubscribeInitialContentLoadedHandler(EventToken token);
+
+        Window& RegisterCustomSchemeHandler(std::string_view scheme, CustomSchemeHandler handler);
 
     private:
         friend class Application;

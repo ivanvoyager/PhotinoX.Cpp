@@ -26,7 +26,12 @@ namespace photinox::native
         [[nodiscard]] const char* GetVersion() const noexcept;
 
         //memory
+        [[nodiscard]] void* AllocateMemory(int size) const noexcept;
+        void FreeMemory(void* value) const noexcept;
+
+        [[nodiscard]] char* AllocateString(int size) const noexcept;
         void FreeString(char* value) const noexcept;
+        void FreeStringArray(char** values, int count) const noexcept;
 
         //application
         [[nodiscard]] int ApplicationRun(const ApplicationInitParams* initParams) const;
@@ -52,10 +57,10 @@ namespace photinox::native
         void WindowClose(void* instance) const noexcept;
 
         [[nodiscard]] std::string WindowGetTitle(void* instance) const;
-        void WindowSetTitle(void* instance, const char* title) const noexcept;
+        void WindowSetTitle(void* instance, Utf8String title) const noexcept;
 
         [[nodiscard]] std::string WindowGetIconFile(void* instance) const;
-        void WindowSetIconFile(void* instance, const char* iconFile) const noexcept;
+        void WindowSetIconFile(void* instance, Utf8String iconFile) const noexcept;
 
         [[nodiscard]] Point WindowGetPosition(void* instance) const noexcept;
         void WindowSetPosition(void* instance, Point position) const noexcept;
@@ -91,9 +96,10 @@ namespace photinox::native
         void WindowSetTransparentEnabled(void* instance, bool enabled) const noexcept;
 
         //browser
-        void WindowNavigateToString(void* instance, const char* content) const noexcept;
-        void WindowNavigateToUrl(void* instance, const char* url) const noexcept;
-        void WindowSendWebMessage(void* instance, const char* message) const noexcept;
+        void WindowNavigateToString(void* instance, Utf8String content) const noexcept;
+        void WindowNavigateToUrl(void* instance, Utf8String url) const noexcept;
+        void WindowSendWebMessage(void* instance, Utf8String message) const noexcept;
+        [[nodiscard]] bool WindowAddCustomSchemeName(void* instance, Utf8String scheme) const noexcept;
 
         [[nodiscard]] bool WindowGetContextMenuEnabled(void* instance) const noexcept;
         void WindowSetContextMenuEnabled(void* instance, bool enabled) const noexcept;
@@ -131,7 +137,11 @@ namespace photinox::native
         const char* (*getVersion_)() = nullptr;
 
         //memory
+        void* (*allocateMemory_)(int) = nullptr;
+        void (*freeMemory_)(void*) = nullptr;
+        char* (*allocateString_)(int) = nullptr;
         void (*freeString_)(char*) = nullptr;
+        void (*freeStringArray_)(char**, int) = nullptr;
 
         //application
         int (*applicationRun_)(const ApplicationInitParams*) = nullptr;
@@ -157,10 +167,10 @@ namespace photinox::native
         void (*windowClose_)(void*) = nullptr;
 
         char* (*windowGetTitle_)(void*) = nullptr;
-        void (*windowSetTitle_)(void*, const char*) = nullptr;
+        void (*windowSetTitle_)(void*, Utf8String) = nullptr;
 
         char* (*windowGetIconFile_)(void*) = nullptr;
-        void (*windowSetIconFile_)(void*, const char*) = nullptr;
+        void (*windowSetIconFile_)(void*, Utf8String) = nullptr;
 
         void (*windowGetPosition_)(void*, int*, int*) = nullptr;
         void (*windowSetPosition_)(void*, int, int) = nullptr;
@@ -195,9 +205,10 @@ namespace photinox::native
         void (*windowSetTransparentEnabled_)(void*, bool) = nullptr;
 
         //browser
-        void (*windowNavigateToString_)(void*, const char*) = nullptr;
-        void (*windowNavigateToUrl_)(void*, const char*) = nullptr;
-        void (*windowSendWebMessage_)(void*, const char*) = nullptr;
+        void (*windowNavigateToString_)(void*, Utf8String) = nullptr;
+        void (*windowNavigateToUrl_)(void*, Utf8String) = nullptr;
+        void (*windowSendWebMessage_)(void*, Utf8String) = nullptr;
+        bool (*windowAddCustomSchemeName_)(void*, Utf8String) = nullptr;
 
         void (*windowGetContextMenuEnabled_)(void*, bool*) = nullptr;
         void (*windowSetContextMenuEnabled_)(void*, bool) = nullptr;
