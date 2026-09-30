@@ -27,12 +27,21 @@ namespace photinox::native
     {
 #ifdef _WIN32
         auto address = GetProcAddress(static_cast<HMODULE>(handle_), name);
-#else
-        auto address = dlsym(handle_, name);
-#endif
 
         if (!address)
-            throw std::runtime_error(std::string("Required PhotinoX.Native export was not found: ") + name);
+        {
+            const DWORD error = GetLastError();
+            throw std::runtime_error("Required PhotinoX.Native export was not found: " + std::string(name) + ". Win32 error: " + std::to_string(error) + ".");
+        }
+#else
+        dlerror();
+
+        auto address = dlsym(handle_, name);
+        const char* error = dlerror();
+
+        if (error)
+            throw std::runtime_error("Required PhotinoX.Native export was not found: " + std::string(name) + ". Loader error: " + error);
+#endif
 
         return reinterpret_cast<T>(address);
     }
@@ -43,12 +52,20 @@ namespace photinox::native
         handle_ = LoadLibraryW(LibraryName);
 
         if (!handle_)
-            throw std::runtime_error("Failed to load PhotinoX.Native.dll.");
+        {
+            const DWORD error = GetLastError();
+
+            throw std::runtime_error("Failed to load PhotinoX.Native.dll. Win32 error: " + std::to_string(error) + ".");
+        }
 #else
         handle_ = dlopen(LibraryName, RTLD_NOW | RTLD_LOCAL);
 
         if (!handle_)
-            throw std::runtime_error(dlerror());
+        {
+            const char* error = dlerror();
+
+            throw std::runtime_error(error ? error : "Failed to load PhotinoX.Native shared library.");
+        }
 #endif
 
         try
@@ -124,6 +141,11 @@ namespace photinox::native
 
             windowGetTransparentEnabled_ = LoadExport<decltype(windowGetTransparentEnabled_)>("Photino_GetTransparentEnabled");
             windowSetTransparentEnabled_ = LoadExport<decltype(windowSetTransparentEnabled_)>("Photino_SetTransparentEnabled");
+
+            windowGetHandle_ = LoadExport<decltype(windowGetHandle_)>("Photino_GetWindowHandle");
+            windowBeginDrag_ = LoadExport<decltype(windowBeginDrag_)>("Photino_BeginWindowDrag");
+            windowBeginResize_ = LoadExport<decltype(windowBeginResize_)>("Photino_BeginWindowResize");
+            windowGetScreenDpi_ = LoadExport<decltype(windowGetScreenDpi_)>("Photino_GetScreenDpi");
 
             //browser
             windowNavigateToString_ = LoadExport<decltype(windowNavigateToString_)>("Photino_NavigateToString");
@@ -469,6 +491,26 @@ namespace photinox::native
         bool visible = false;
         windowGetVisible_(instance, &visible);
         return visible;
+    }
+
+    void* Library::WindowGetHandle(void* instance) const noexcept
+    {
+        return windowGetHandle_(instance);
+    }
+
+    void Library::WindowBeginDrag(void* instance) const noexcept
+    {
+        windowBeginDrag_(instance);
+    }
+
+    void Library::WindowBeginResize(void* instance, WindowEdge edge) const noexcept
+    {
+        windowBeginResize_(instance, edge);
+    }
+
+    unsigned int Library::WindowGetScreenDpi(void* instance) const noexcept
+    {
+        return windowGetScreenDpi_(instance);
     }
 
     // appearance

@@ -187,6 +187,14 @@ namespace photinox
 
         Window& SendWebMessage(std::string_view message);
 
+        // Native window API
+
+        [[nodiscard]] void* WindowHandle() const;
+        [[nodiscard]] unsigned int ScreenDpi() const;
+
+        Window& BeginWindowDrag();
+        Window& BeginWindowResize(WindowEdge edge);
+
         // Getters
 
         [[nodiscard]] bool IsInitialized() const noexcept;

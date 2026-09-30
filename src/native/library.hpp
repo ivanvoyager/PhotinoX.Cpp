@@ -45,6 +45,7 @@ namespace photinox::native
         [[nodiscard]] int ApplicationShowNotification(const NotificationShowParams* showParams) const;
         [[nodiscard]] bool ApplicationGetNotificationsEnabled() const noexcept;
         void ApplicationSetNotificationsEnabled(bool enabled) const noexcept;
+
         //window
         [[nodiscard]] void* WindowCreate(WindowInitParams* initParams) const;
         [[nodiscard]] bool WindowShow(void* instance) const;
@@ -90,6 +91,11 @@ namespace photinox::native
         void WindowSetTopmost(void* instance, bool topmost) const noexcept;
 
         [[nodiscard]] bool WindowGetVisible(void* instance) const noexcept;
+
+        [[nodiscard]] void* WindowGetHandle(void* instance) const noexcept;
+        void WindowBeginDrag(void* instance) const noexcept;
+        void WindowBeginResize(void* instance, WindowEdge edge) const noexcept;
+        [[nodiscard]] unsigned int WindowGetScreenDpi(void* instance) const noexcept;
 
         // appearance
         [[nodiscard]] bool WindowGetTransparentEnabled(void* instance) const noexcept;
@@ -203,6 +209,11 @@ namespace photinox::native
 
         void (*windowGetTransparentEnabled_)(void*, bool*) = nullptr;
         void (*windowSetTransparentEnabled_)(void*, bool) = nullptr;
+
+        void* (*windowGetHandle_)(void*) = nullptr;
+        void (*windowBeginDrag_)(void*) = nullptr;
+        void (*windowBeginResize_)(void*, WindowEdge) = nullptr;
+        unsigned int (*windowGetScreenDpi_)(void*) = nullptr;
 
         //browser
         void (*windowNavigateToString_)(void*, Utf8String) = nullptr;

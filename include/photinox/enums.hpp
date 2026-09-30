@@ -46,4 +46,17 @@ namespace photinox
         OnExplicitShutdown
     };
     static_assert(sizeof(ShutdownMode) == sizeof(int));
+
+    enum class WindowEdge : int
+    {
+        Top,
+        Bottom,
+        Left,
+        Right,
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    };
+    static_assert(sizeof(WindowEdge) == sizeof(int));
 }

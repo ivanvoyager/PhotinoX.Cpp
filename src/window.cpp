@@ -40,6 +40,24 @@ namespace photinox
             }
         }
 
+        bool IsValidWindowEdge(WindowEdge edge) noexcept
+        {
+            switch (edge)
+            {
+                case WindowEdge::Top:
+                case WindowEdge::Bottom:
+                case WindowEdge::Left:
+                case WindowEdge::Right:
+                case WindowEdge::TopLeft:
+                case WindowEdge::TopRight:
+                case WindowEdge::BottomLeft:
+                case WindowEdge::BottomRight:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         std::string NormalizeScheme(std::string_view scheme)
         {
             std::string result(scheme);
@@ -291,8 +309,7 @@ namespace photinox
             for (const auto& [scheme, handler] : customSchemes)
             {
                 assert(handler);
-                if (customSchemeIndex >= native::MaxCustomSchemeNames)
-                    break;
+                assert(customSchemeIndex < native::MaxCustomSchemeNames);
                 params.browser.customSchemeNames[customSchemeIndex++] = scheme.c_str();
             }
 
@@ -2058,6 +2075,55 @@ namespace photinox
         GetDispatcher().Invoke([this, message = std::string(message)]
         {
             impl_->NativeLibrary().WindowSendWebMessage(impl_->nativeInstance, message.c_str());
+        });
+
+        return *this;
+    }
+
+    // Native window API
+
+    void* Window::WindowHandle() const
+    {
+        impl_->ThrowIfClosedOrNotInitialized("WindowHandle");
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetHandle(impl_->nativeInstance);
+        });
+    }
+
+    unsigned int Window::ScreenDpi() const
+    {
+        impl_->ThrowIfClosedOrNotInitialized("ScreenDpi");
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetScreenDpi(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::BeginWindowDrag()
+    {
+        impl_->ThrowIfClosedOrNotInitialized("BeginWindowDrag");
+
+        GetDispatcher().Invoke([this]
+        {
+            impl_->NativeLibrary().WindowBeginDrag(impl_->nativeInstance);
+        });
+
+        return *this;
+    }
+
+    Window& Window::BeginWindowResize(WindowEdge edge)
+    {
+        impl_->ThrowIfClosedOrNotInitialized("BeginWindowResize");
+
+        if (!IsValidWindowEdge(edge))
+            throw std::invalid_argument("Invalid window edge.");
+
+        GetDispatcher().Invoke([this, edge]
+        {
+            impl_->NativeLibrary().WindowBeginResize(impl_->nativeInstance, edge);
         });
 
         return *this;
