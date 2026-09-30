@@ -148,6 +148,8 @@ namespace photinox::native
             windowGetScreenDpi_ = LoadExport<decltype(windowGetScreenDpi_)>("Photino_GetScreenDpi");
             windowGetAllMonitors_ = LoadExport<decltype(windowGetAllMonitors_)>("Photino_GetAllMonitors");
             windowGetMonitor_ = LoadExport<decltype(windowGetMonitor_)>("Photino_GetWindowMonitor");
+            windowSetChromelessDragRegions_ = LoadExport<decltype(windowSetChromelessDragRegions_)>("Photino_SetChromelessDragRegions");
+            windowSetChromelessResizeBorderThickness_ = LoadExport<decltype(windowSetChromelessResizeBorderThickness_)>("Photino_SetChromelessResizeBorderThickness");
 
             //browser
             windowNavigateToString_ = LoadExport<decltype(windowNavigateToString_)>("Photino_NavigateToString");
@@ -523,6 +525,18 @@ namespace photinox::native
     bool Library::WindowGetMonitor(void* instance, Monitor& monitor) const noexcept
     {
         return windowGetMonitor_(instance, &monitor);
+    }
+
+    bool Library::WindowSetChromelessDragRegions(void* instance,
+                                                 const LayoutRegion* dragRegions, int dragRegionCount,
+                                                 const LayoutRegion* noDragRegions, int noDragRegionCount) const noexcept
+    {
+        return windowSetChromelessDragRegions_(instance, dragRegions, dragRegionCount, noDragRegions, noDragRegionCount);
+    }
+
+    bool Library::WindowSetChromelessResizeBorderThickness(void* instance, int thickness) const noexcept
+    {
+        return windowSetChromelessResizeBorderThickness_(instance, thickness);
     }
 
     // appearance

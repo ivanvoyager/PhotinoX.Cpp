@@ -100,6 +100,12 @@ namespace photinox::native
         [[nodiscard]] bool WindowGetAllMonitors(void* instance, GetAllMonitorsCallback callback, void* state) const noexcept;
         [[nodiscard]] bool WindowGetMonitor(void* instance, Monitor& monitor) const noexcept;
 
+        [[nodiscard]] bool WindowSetChromelessDragRegions(void* instance,
+                                                          const LayoutRegion* dragRegions, int dragRegionCount,
+                                                          const LayoutRegion* noDragRegions, int noDragRegionCount) const noexcept;
+
+        [[nodiscard]] bool WindowSetChromelessResizeBorderThickness(void* instance, int thickness) const noexcept;
+
         // appearance
         [[nodiscard]] bool WindowGetTransparentEnabled(void* instance) const noexcept;
         void WindowSetTransparentEnabled(void* instance, bool enabled) const noexcept;
@@ -219,6 +225,8 @@ namespace photinox::native
         unsigned int (*windowGetScreenDpi_)(void*) = nullptr;
         bool (*windowGetAllMonitors_)(void*, GetAllMonitorsCallback, void*) = nullptr;
         bool (*windowGetMonitor_)(void*, Monitor*) = nullptr;
+        bool (*windowSetChromelessDragRegions_)(void*, const LayoutRegion*, int, const LayoutRegion*, int) = nullptr;
+        bool (*windowSetChromelessResizeBorderThickness_)(void*, int) = nullptr;
 
         //browser
         void (*windowNavigateToString_)(void*, Utf8String) = nullptr;

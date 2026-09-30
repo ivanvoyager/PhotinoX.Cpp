@@ -1,6 +1,7 @@
 #pragma once
 
 #include <photinox/enums.hpp>
+#include <photinox/geometry.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -8,27 +9,6 @@
 namespace photinox::native
 {
     using Utf8String = const char*;
-
-    struct Rect
-    {
-        int x;
-        int y;
-        int width;
-        int height;
-    };
-
-    static_assert(std::is_standard_layout_v<Rect>);
-    static_assert(sizeof(Rect) == 16);
-
-    struct Monitor
-    {
-        Rect monitor;
-        Rect work;
-        double scale;
-    };
-
-    static_assert(std::is_standard_layout_v<Monitor>);
-    static_assert(sizeof(Monitor) == 40);
 
     using GetAllMonitorsCallback = bool (*)(const Monitor* monitor, void* state);
 

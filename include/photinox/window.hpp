@@ -5,6 +5,7 @@
 #include <photinox/geometry.hpp>
 
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -197,6 +198,12 @@ namespace photinox
 
         Window& BeginWindowDrag();
         Window& BeginWindowResize(WindowEdge edge);
+
+        Window& SetLinuxChromelessDragRegion(int height, int rightInset = 0, int leftInset = 0, int topInset = 0);
+        Window& SetLinuxChromelessDragRegions(std::span<const LayoutRegion> dragRegions, std::span<const LayoutRegion> noDragRegions = {});
+
+        [[nodiscard]] int LinuxChromelessResizeBorderThickness() const noexcept;
+        Window& SetLinuxChromelessResizeBorderThickness(int thickness);
 
         // Getters
 

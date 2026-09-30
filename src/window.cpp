@@ -104,35 +104,13 @@ namespace photinox
             return scheme == "http" || scheme == "https" || scheme == "file";
         }
 
-        Monitor ConvertMonitor(const native::Monitor& monitor) noexcept
-        {
-            return
-            {
-                .monitor =
-                {
-                    .x = monitor.monitor.x,
-                    .y = monitor.monitor.y,
-                    .width = monitor.monitor.width,
-                    .height = monitor.monitor.height
-                },
-                .work =
-                {
-                    .x = monitor.work.x,
-                    .y = monitor.work.y,
-                    .width = monitor.work.width,
-                    .height = monitor.work.height
-                },
-                .scale = monitor.scale
-            };
-        }
-
         struct GetMonitorsState
         {
             std::vector<Monitor> monitors;
             std::exception_ptr exception;
         };
 
-        bool GetMonitorCallback(const native::Monitor* monitor, void* state) noexcept
+        bool GetMonitorCallback(const Monitor* monitor, void* state) noexcept
         {
             assert(monitor);
             assert(state);
@@ -144,7 +122,7 @@ namespace photinox
 
             try
             {
-                callbackState.monitors.push_back(ConvertMonitor(*monitor));
+                callbackState.monitors.push_back(*monitor);
                 return true;
             }
             catch (...)
@@ -186,6 +164,12 @@ namespace photinox
         };
 
         WindowState windowState = WindowState::Normal;
+
+        int linuxChromelessDragRegionHeight = 0;
+        int linuxChromelessDragRegionLeftInset = 0;
+        int linuxChromelessDragRegionTopInset = 0;
+        int linuxChromelessDragRegionRightInset = 0;
+        int linuxChromelessResizeBorderThickness = 8;
 
         bool resizable = true;
         bool topmost = false;
@@ -317,7 +301,11 @@ namespace photinox
             params.window.useNativeWindowOwner = useNativeWindowOwner;
             params.window.showOnInitialize = showOnInitialize;
 
-            params.linuxChromeless.resizeBorderThickness = 8;
+            params.linuxChromeless.dragRegionHeight = linuxChromelessDragRegionHeight;
+            params.linuxChromeless.dragRegionLeftInset = linuxChromelessDragRegionLeftInset;
+            params.linuxChromeless.dragRegionTopInset = linuxChromelessDragRegionTopInset;
+            params.linuxChromeless.dragRegionRightInset = linuxChromelessDragRegionRightInset;
+            params.linuxChromeless.resizeBorderThickness = linuxChromelessResizeBorderThickness;
 
             params.geometry.left = location.x;
             params.geometry.top = location.y;
@@ -415,6 +403,20 @@ namespace photinox
             if (transparent && !chromeless)
                 throw std::invalid_argument("Transparent windows must be chromeless on Windows.");
 #endif
+            if (linuxChromelessDragRegionHeight < 0)
+                throw std::invalid_argument("Linux chromeless drag region height cannot be negative.");
+
+            if (linuxChromelessDragRegionLeftInset < 0)
+                throw std::invalid_argument("Linux chromeless drag region left inset cannot be negative.");
+
+            if (linuxChromelessDragRegionTopInset < 0)
+                throw std::invalid_argument("Linux chromeless drag region top inset cannot be negative.");
+
+            if (linuxChromelessDragRegionRightInset < 0)
+                throw std::invalid_argument("Linux chromeless drag region right inset cannot be negative.");
+
+            if (linuxChromelessResizeBorderThickness < 0)
+                throw std::invalid_argument("Linux chromeless resize border thickness cannot be negative.");
         }
 
         void ThrowIfClosed(std::string_view memberName) const
@@ -2084,8 +2086,6 @@ namespace photinox
         return *this;
     }
 
-    // Features
-
     // UserDataFolder
 
     std::string_view Window::UserDataFolder() const noexcept
@@ -2178,12 +2178,12 @@ namespace photinox
 
         return GetDispatcher().Invoke([this]
         {
-            native::Monitor monitor{};
+            Monitor monitor{};
 
             if (!impl_->NativeLibrary().WindowGetMonitor(impl_->nativeInstance, monitor))
                 throw std::runtime_error("Failed to get the native window monitor.");
 
-            return ConvertMonitor(monitor);
+            return monitor;
         });
     }
 
@@ -2211,6 +2211,121 @@ namespace photinox
             impl_->NativeLibrary().WindowBeginResize(impl_->nativeInstance, edge);
         });
 
+        return *this;
+    }
+
+    // Linux-specific features
+
+    Window& Window::SetLinuxChromelessDragRegion(int height, int rightInset, int leftInset, int topInset)
+    {
+        impl_->ThrowIfClosed("SetLinuxChromelessDragRegion");
+
+        if (height < 0)
+            throw std::invalid_argument("Chromeless drag region height cannot be negative.");
+
+        if (rightInset < 0)
+            throw std::invalid_argument("Chromeless drag region right inset cannot be negative.");
+
+        if (leftInset < 0)
+            throw std::invalid_argument("Chromeless drag region left inset cannot be negative.");
+
+        if (topInset < 0)
+            throw std::invalid_argument("Chromeless drag region top inset cannot be negative.");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->linuxChromelessDragRegionHeight = height;
+            impl_->linuxChromelessDragRegionRightInset = rightInset;
+            impl_->linuxChromelessDragRegionLeftInset = leftInset;
+            impl_->linuxChromelessDragRegionTopInset = topInset;
+            return *this;
+        }
+
+#if !defined(__linux__)
+        return *this;
+#endif
+
+        if (height == 0)
+            return SetLinuxChromelessDragRegions({});
+
+        const LayoutRegion region
+        {
+            .width = 0,
+            .height = height,
+            .margin =
+            {
+                .left = leftInset,
+                .top = topInset,
+                .right = rightInset,
+                .bottom = 0
+            },
+            .horizontalAlignment = HorizontalAlignment::Stretch,
+            .verticalAlignment = VerticalAlignment::Top
+        };
+
+        return SetLinuxChromelessDragRegions(std::span(&region, 1));
+    }
+
+    Window& Window::SetLinuxChromelessDragRegions(std::span<const LayoutRegion> dragRegions, std::span<const LayoutRegion> noDragRegions)
+    {
+        impl_->ThrowIfClosedOrNotInitialized("SetLinuxChromelessDragRegions");
+
+#if !defined(__linux__)
+        return *this;
+#endif
+
+        if (dragRegions.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()) ||
+            noDragRegions.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+        {
+            throw std::invalid_argument("Too many chromeless layout regions.");
+        }
+
+        const bool applied = GetDispatcher().Invoke([this, dragRegions, noDragRegions]
+        {
+                return impl_->NativeLibrary().WindowSetChromelessDragRegions(impl_->nativeInstance,
+                    dragRegions.empty() ? nullptr : dragRegions.data(), static_cast<int>(dragRegions.size()),
+                    noDragRegions.empty() ? nullptr : noDragRegions.data(), static_cast<int>(noDragRegions.size()));
+        });
+
+        if (!applied)
+            throw std::runtime_error("Failed to set Linux chromeless drag regions.");
+
+        return *this;
+    }
+
+    // LinuxChromelessResizeBorderThickness
+
+    int Window::LinuxChromelessResizeBorderThickness() const noexcept
+    {
+        return impl_->linuxChromelessResizeBorderThickness;
+    }
+
+    Window& Window::SetLinuxChromelessResizeBorderThickness(int thickness)
+    {
+        impl_->ThrowIfClosed("SetLinuxChromelessResizeBorderThickness");
+
+        if (thickness < 0)
+            throw std::invalid_argument("Chromeless resize border thickness cannot be negative.");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->linuxChromelessResizeBorderThickness = thickness;
+            return *this;
+        }
+
+#if !defined(__linux__)
+        return *this;
+#endif
+
+        const bool applied = GetDispatcher().Invoke([this, thickness]
+        {
+            return impl_->NativeLibrary().WindowSetChromelessResizeBorderThickness(impl_->nativeInstance, thickness);
+        });
+
+        if (!applied)
+            throw std::runtime_error("Failed to set Linux chromeless resize border thickness.");
+
+        impl_->linuxChromelessResizeBorderThickness = thickness;
         return *this;
     }
 
