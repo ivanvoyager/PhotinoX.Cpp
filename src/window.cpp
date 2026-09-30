@@ -104,6 +104,56 @@ namespace photinox
             return scheme == "http" || scheme == "https" || scheme == "file";
         }
 
+        Monitor ConvertMonitor(const native::Monitor& monitor) noexcept
+        {
+            return
+            {
+                .monitor =
+                {
+                    .x = monitor.monitor.x,
+                    .y = monitor.monitor.y,
+                    .width = monitor.monitor.width,
+                    .height = monitor.monitor.height
+                },
+                .work =
+                {
+                    .x = monitor.work.x,
+                    .y = monitor.work.y,
+                    .width = monitor.work.width,
+                    .height = monitor.work.height
+                },
+                .scale = monitor.scale
+            };
+        }
+
+        struct GetMonitorsState
+        {
+            std::vector<Monitor> monitors;
+            std::exception_ptr exception;
+        };
+
+        bool GetMonitorCallback(const native::Monitor* monitor, void* state) noexcept
+        {
+            assert(monitor);
+            assert(state);
+
+            if (!monitor || !state)
+                return false;
+
+            auto& callbackState = *static_cast<GetMonitorsState*>(state);
+
+            try
+            {
+                callbackState.monitors.push_back(ConvertMonitor(*monitor));
+                return true;
+            }
+            catch (...)
+            {
+                callbackState.exception = std::current_exception();
+                return false;
+            }
+        }
+
     } // namespace
 
     class Window::Impl final
@@ -2099,6 +2149,41 @@ namespace photinox
         return GetDispatcher().Invoke([this]
         {
             return impl_->NativeLibrary().WindowGetScreenDpi(impl_->nativeInstance);
+        });
+    }
+
+    std::vector<Monitor> Window::Monitors() const
+    {
+        impl_->ThrowIfClosedOrNotInitialized("Monitors");
+
+        return GetDispatcher().Invoke([this]
+        {
+            GetMonitorsState state;
+
+            const bool enumerated = impl_->NativeLibrary().WindowGetAllMonitors(impl_->nativeInstance, GetMonitorCallback, &state);
+
+            if (state.exception)
+                std::rethrow_exception(state.exception);
+
+            if (!enumerated)
+                throw std::runtime_error("Failed to enumerate native monitors.");
+
+            return std::move(state.monitors);
+        });
+    }
+
+    Monitor Window::MainMonitor() const
+    {
+        impl_->ThrowIfClosedOrNotInitialized("MainMonitor");
+
+        return GetDispatcher().Invoke([this]
+        {
+            native::Monitor monitor{};
+
+            if (!impl_->NativeLibrary().WindowGetMonitor(impl_->nativeInstance, monitor))
+                throw std::runtime_error("Failed to get the native window monitor.");
+
+            return ConvertMonitor(monitor);
         });
     }
 

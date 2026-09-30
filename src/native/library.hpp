@@ -97,6 +97,9 @@ namespace photinox::native
         void WindowBeginResize(void* instance, WindowEdge edge) const noexcept;
         [[nodiscard]] unsigned int WindowGetScreenDpi(void* instance) const noexcept;
 
+        [[nodiscard]] bool WindowGetAllMonitors(void* instance, GetAllMonitorsCallback callback, void* state) const noexcept;
+        [[nodiscard]] bool WindowGetMonitor(void* instance, Monitor& monitor) const noexcept;
+
         // appearance
         [[nodiscard]] bool WindowGetTransparentEnabled(void* instance) const noexcept;
         void WindowSetTransparentEnabled(void* instance, bool enabled) const noexcept;
@@ -214,6 +217,8 @@ namespace photinox::native
         void (*windowBeginDrag_)(void*) = nullptr;
         void (*windowBeginResize_)(void*, WindowEdge) = nullptr;
         unsigned int (*windowGetScreenDpi_)(void*) = nullptr;
+        bool (*windowGetAllMonitors_)(void*, GetAllMonitorsCallback, void*) = nullptr;
+        bool (*windowGetMonitor_)(void*, Monitor*) = nullptr;
 
         //browser
         void (*windowNavigateToString_)(void*, Utf8String) = nullptr;

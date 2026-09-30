@@ -9,6 +9,29 @@ namespace photinox::native
 {
     using Utf8String = const char*;
 
+    struct Rect
+    {
+        int x;
+        int y;
+        int width;
+        int height;
+    };
+
+    static_assert(std::is_standard_layout_v<Rect>);
+    static_assert(sizeof(Rect) == 16);
+
+    struct Monitor
+    {
+        Rect monitor;
+        Rect work;
+        double scale;
+    };
+
+    static_assert(std::is_standard_layout_v<Monitor>);
+    static_assert(sizeof(Monitor) == 40);
+
+    using GetAllMonitorsCallback = bool (*)(const Monitor* monitor, void* state);
+
     using CreatedCallback = void (*)(void* instance, bool registered, void* state);
     using ClosingCallback = bool (*)(void* state);
     using ClosedCallback = void (*)(void* state);

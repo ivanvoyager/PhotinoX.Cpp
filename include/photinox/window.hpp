@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace photinox
 {
@@ -191,6 +192,8 @@ namespace photinox
 
         [[nodiscard]] void* WindowHandle() const;
         [[nodiscard]] unsigned int ScreenDpi() const;
+        [[nodiscard]] std::vector<Monitor> Monitors() const;
+        [[nodiscard]] Monitor MainMonitor() const;
 
         Window& BeginWindowDrag();
         Window& BeginWindowResize(WindowEdge edge);

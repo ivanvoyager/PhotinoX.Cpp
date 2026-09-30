@@ -146,6 +146,8 @@ namespace photinox::native
             windowBeginDrag_ = LoadExport<decltype(windowBeginDrag_)>("Photino_BeginWindowDrag");
             windowBeginResize_ = LoadExport<decltype(windowBeginResize_)>("Photino_BeginWindowResize");
             windowGetScreenDpi_ = LoadExport<decltype(windowGetScreenDpi_)>("Photino_GetScreenDpi");
+            windowGetAllMonitors_ = LoadExport<decltype(windowGetAllMonitors_)>("Photino_GetAllMonitors");
+            windowGetMonitor_ = LoadExport<decltype(windowGetMonitor_)>("Photino_GetWindowMonitor");
 
             //browser
             windowNavigateToString_ = LoadExport<decltype(windowNavigateToString_)>("Photino_NavigateToString");
@@ -511,6 +513,16 @@ namespace photinox::native
     unsigned int Library::WindowGetScreenDpi(void* instance) const noexcept
     {
         return windowGetScreenDpi_(instance);
+    }
+
+    bool Library::WindowGetAllMonitors(void* instance, GetAllMonitorsCallback callback, void* state) const noexcept
+    {
+        return windowGetAllMonitors_(instance, callback, state);
+    }
+
+    bool Library::WindowGetMonitor(void* instance, Monitor& monitor) const noexcept
+    {
+        return windowGetMonitor_(instance, &monitor);
     }
 
     // appearance
