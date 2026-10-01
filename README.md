@@ -174,20 +174,9 @@ Asynchronous native callbacks use explicit execution and release callbacks. If a
 
 Exceptions from asynchronous dispatcher operations are forwarded to the dispatcher unhandled-exception handlers without crossing the native ABI boundary.
 
-### Windows
+## Window
 
-Window represents a native operating-system window with an embedded platform WebView.
-
-The current API includes:
-
-- explicit `Show()` and `Close()`;
-- initialization and closed state;
-- parent-child window relationships;
-- title and startup content configuration;
-- creating, created, closing, and closed events;
-- typed close cancellation;
-- application ownership;
-- dispatcher-aware operations.
+`Window` provides a dispatcher-aware, multi-window desktop API with explicit lifecycle management, geometry and state control, appearance and visibility settings, WebView configuration and navigation, messaging, custom schemes, native dialogs, monitor information, platform handle access, and typed removable event subscriptions.
 
 ```cpp
 Window window(application);
@@ -377,7 +366,7 @@ The API uses:
 - explicit `[[nodiscard]]` contracts;
 - `noexcept` where operations are guaranteed not to throw;
 - internal PImpl-based implementation isolation;
-- CMake package integration.
+- CMake FetchContent integration.
 
 Shared behavior is aligned with PhotinoX, but language-specific API design is intentionally preserved.
 
@@ -389,9 +378,9 @@ Examples:
 - asynchronous exception events carry `std::exception_ptr`.
 - native handles and eventpp implementation details remain private.
 
-## Quick start
+## Installation
 
-### CMake
+Add PhotinoX.Cpp to your CMake project using `FetchContent`:
 
 ```cmake
 include(FetchContent)
@@ -404,11 +393,15 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(PhotinoXCpp)
 
-add_executable(MyPhotinoApp main.cpp)
-target_link_libraries(MyPhotinoApp PRIVATE PhotinoX::Cpp)
+target_link_libraries(MyApplication
+    PRIVATE
+        PhotinoX::Cpp
+)
 ```
 
-### Application
+PhotinoX.Cpp automatically downloads the required PhotinoX.Native runtime for the target platform and copies it to the application output directory.
+
+## Quick start
 
 ```cpp
 #include <photinox/photinox.hpp>
@@ -481,7 +474,7 @@ PhotinoX.Cpp uses the same PhotinoX.Native ABI on all supported desktop platform
 | macOS    | Cocoa                | WKWebView               |
 | Linux    | GTK 3                | WebKitGTK 4.1           |
 
-PhotinoX.Native owns the native application runtime and platform-specific implementation. PhotinoX.Cpp provides the C++ application framework and does not expose platform implementation details through its primary API.
+PhotinoX.Native owns the native application runtime and platform-specific implementation. PhotinoX.Cpp provides the C++ application framework while keeping platform-specific implementation details isolated behind explicit native interoperability APIs.
 
 ## Supported platforms
 
@@ -570,15 +563,9 @@ PhotinoX.Cpp builds on the evolving PhotinoX.Native runtime and follows the shar
 
 ## Project status
 
-PhotinoX.Cpp is under active development. The public API may change while the initial framework surface and packaging model are being completed.
+PhotinoX.Cpp provides the complete application and window framework layer over PhotinoX.Native.
 
-The current focus is:
-
-- expanding typed native window and WebView events;
-- maintaining semantic alignment with PhotinoX;
-- validating lifecycle and dispatch behavior across Windows, macOS, and Linux;
-- stabilizing CMake packaging and native runtime resolution;
-- preparing the framework as a foundation for production desktop applications.
+The project remains under active development. Future work will focus on API stabilization, documentation, samples, packaging, and continued alignment with PhotinoX and PhotinoX.Native.
 
 ## Contributing
 
