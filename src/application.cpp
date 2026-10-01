@@ -37,6 +37,50 @@ namespace photinox
                     return false;
             }
         }
+
+        std::string CopyString(const char* value)
+        {
+            return value ? value : "";
+        }
+
+        void ValidateRuntimeInfo(const native::RuntimeInfo& info)
+        {
+            if (info.size != sizeof(native::RuntimeInfo) || info.abiVersion != native::RuntimeInfo::NativeAbiVersion)
+            {
+                throw std::runtime_error(
+                    "Unsupported PhotinoX native runtime info ABI. Expected size " + std::to_string(sizeof(native::RuntimeInfo)) +
+                    ", ABI version " + std::to_string(native::RuntimeInfo::NativeAbiVersion) +
+                    "; got size " + std::to_string(info.size) +
+                    ", ABI version " + std::to_string(info.abiVersion) +
+                    ".");
+            }
+        }
+
+        PlatformRuntimeInfo CreatePlatformRuntimeInfo(const native::RuntimeInfo& info)
+        {
+#ifdef _WIN32
+            return WindowsRuntimeInfo
+            {
+                .webView2RuntimeVersion = CopyString(info.windows.webView2RuntimeVersion)
+            };
+#elif defined(__linux__)
+            return LinuxRuntimeInfo
+            {
+                .glibcVersion = CopyString(info.linux.glibcVersion),
+                .gtkVersion = CopyString(info.linux.gtkVersion),
+                .webKitGtkApiTarget = CopyString(info.linux.webKitGtkApiTarget),
+                .webKitGtkRuntimeVersion = CopyString(info.linux.webKitGtkRuntimeVersion)
+            };
+#elif defined(__APPLE__)
+            return MacOSRuntimeInfo
+            {
+                .webKitVersion = CopyString(info.macOS.webKitVersion)
+            };
+#else
+#error Unsupported platform
+#endif
+        }
+
     } // namespace
 
     class Application::Impl final
@@ -568,6 +612,21 @@ namespace photinox
     {
         const char* version = impl_->library.GetVersion();
         return version ? std::string_view(version) : std::string_view();
+    }
+
+    RuntimeInfo Application::GetRuntimeInfo() const
+    {
+        const native::RuntimeInfo nativeInfo = impl_->library.GetRuntimeInfo();
+
+        ValidateRuntimeInfo(nativeInfo);
+
+        return
+        {
+            .nativeVersion = CopyString(nativeInfo.nativeVersion),
+            .webViewEngine = CopyString(nativeInfo.webViewEngine),
+            .webViewRuntimeVersion = CopyString(nativeInfo.webViewRuntimeVersion),
+            .platform = CreatePlatformRuntimeInfo(nativeInfo)
+        };
     }
 
     bool Application::IsRunning() const noexcept

@@ -89,6 +89,7 @@ namespace photinox::native
         try
         {
             getVersion_ = LoadExport<decltype(getVersion_)>("Photino_GetNativeVersion");
+            getRuntimeInfo_ = LoadExport<decltype(getRuntimeInfo_)>("Photino_GetRuntimeInfo");
 
             //memory
             allocateMemory_ = LoadExport<decltype(allocateMemory_)>("Photino_AllocateMemory");
@@ -226,6 +227,11 @@ namespace photinox::native
     const char* Library::GetVersion() const noexcept
     {
         return getVersion_();
+    }
+
+    RuntimeInfo Library::GetRuntimeInfo() const noexcept
+    {
+        return getRuntimeInfo_();
     }
 
     //memory

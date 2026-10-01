@@ -3,6 +3,7 @@
 #include <photinox/callbacks.hpp>
 #include <photinox/dispatcher.hpp>
 #include <photinox/event_token.hpp>
+#include <photinox/runtime_info.hpp>
 #include <photinox/window_collection.hpp>
 
 #include <any>
@@ -47,6 +48,7 @@ namespace photinox
         Application& SetShutdownMode(ShutdownMode shutdownMode);
 
         [[nodiscard]] std::string_view NativeVersion() const noexcept;
+        [[nodiscard]] RuntimeInfo GetRuntimeInfo() const;
 
         [[nodiscard]] bool IsRunning() const noexcept;
         [[nodiscard]] bool IsShuttingDown() const noexcept;

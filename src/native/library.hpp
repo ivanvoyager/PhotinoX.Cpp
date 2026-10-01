@@ -2,9 +2,10 @@
 
 #include <photinox/geometry.hpp>
 
-#include "callbacks.hpp"
 #include "application.hpp"
+#include "callbacks.hpp"
 #include "notification.hpp"
+#include "runtime_info.hpp"
 #include "window.hpp"
 
 #include <string>
@@ -24,6 +25,7 @@ namespace photinox::native
         Library& operator=(Library&&) = delete;
 
         [[nodiscard]] const char* GetVersion() const noexcept;
+        [[nodiscard]] RuntimeInfo GetRuntimeInfo() const noexcept;
 
         //memory
         [[nodiscard]] void* AllocateMemory(int size) const noexcept;
@@ -181,6 +183,7 @@ namespace photinox::native
         void* handle_ = nullptr;
 
         const char* (*getVersion_)() = nullptr;
+        RuntimeInfo(*getRuntimeInfo_)() = nullptr;
 
         //memory
         void* (*allocateMemory_)(int) = nullptr;

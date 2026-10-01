@@ -171,6 +171,33 @@ int main()
                     std::cout << "Windows removed: " << args.oldItems.size() << '\n';
         });
 
+        const RuntimeInfo info = application.GetRuntimeInfo();
+
+        std::cout << "Native: " << info.nativeVersion << '\n';
+        std::cout << "WebView engine: " << info.webViewEngine << '\n';
+        std::cout << "WebView runtime: " << info.webViewRuntimeVersion << '\n';
+
+        std::visit([](const auto& platform)
+        {
+            using TPlatform = std::decay_t<decltype(platform)>;
+
+            if constexpr (std::same_as<TPlatform, WindowsRuntimeInfo>)
+            {
+                std::cout << "WebView2: " << platform.webView2RuntimeVersion << '\n';
+            }
+            else if constexpr (std::same_as<TPlatform, LinuxRuntimeInfo>)
+            {
+                std::cout << "glibc: " << platform.glibcVersion << '\n';
+                std::cout << "GTK: " << platform.gtkVersion << '\n';
+                std::cout << "WebKitGTK API: " << platform.webKitGtkApiTarget << '\n';
+                std::cout << "WebKitGTK: " << platform.webKitGtkRuntimeVersion << '\n';
+            }
+            else if constexpr (std::same_as<TPlatform, MacOSRuntimeInfo>)
+            {
+                std::cout << "WebKit: " << platform.webKitVersion << '\n';
+            }
+        }, info.platform);
+
         return application.Run(&window);
     }
     catch (const std::exception& exception)

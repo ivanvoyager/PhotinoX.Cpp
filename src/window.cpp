@@ -133,8 +133,21 @@ namespace photinox
             }
         }
 
+        std::string_view TrimAsciiWhitespace(std::string_view value) noexcept
+        {
+            while (!value.empty() && std::isspace(static_cast<unsigned char>(value.front())))
+                value.remove_prefix(1);
+
+            while (!value.empty() && std::isspace(static_cast<unsigned char>(value.back())))
+                value.remove_suffix(1);
+
+            return value;
+        }
+
         std::string NormalizeMacExtension(std::string_view extension)
         {
+            extension = TrimAsciiWhitespace(extension);
+
             while (!extension.empty() && (extension.front() == '*' || extension.front() == '.'))
                 extension.remove_prefix(1);
 
@@ -143,13 +156,18 @@ namespace photinox
 
         std::string NormalizeFileExtension(std::string_view extension)
         {
+            extension = TrimAsciiWhitespace(extension);
+
             if (extension == "*")
                 return "*";
 
             while (!extension.empty() && extension.front() == '*')
                 extension.remove_prefix(1);
 
-            if (!extension.empty() && extension.front() == '.')
+            if (extension.empty())
+                return {};
+
+            if (extension.front() == '.')
                 return "*" + std::string(extension);
 
             return "*." + std::string(extension);
@@ -159,37 +177,49 @@ namespace photinox
         {
             std::vector<std::string> result;
 
+#ifdef __APPLE__
             for (const FileDialogFilter& filter : filters)
             {
-#ifdef __APPLE__
                 for (const std::string& extension : filter.extensions)
                 {
-                    if (extension.empty())
-                        continue;
+                    const std::string_view value = TrimAsciiWhitespace(extension);
 
-                    result.push_back(NormalizeMacExtension(extension));
+                    if (value == "*")
+                        return {};
+
+                    std::string normalizedExtension = NormalizeMacExtension(value);
+
+                    if (!normalizedExtension.empty())
+                        result.push_back(std::move(normalizedExtension));
                 }
+            }
 #else
-                if (filter.name.empty())
+            for (const FileDialogFilter& filter : filters)
+            {
+                const std::string_view name = TrimAsciiWhitespace(filter.name);
+
+                if (name.empty())
                     continue;
 
                 std::string extensions;
 
                 for (const std::string& extension : filter.extensions)
                 {
-                    if (extension.empty())
+                    std::string normalizedExtension = NormalizeFileExtension(extension);
+
+                    if (normalizedExtension.empty())
                         continue;
 
                     if (!extensions.empty())
                         extensions += ';';
 
-                    extensions += NormalizeFileExtension(extension);
+                    extensions += normalizedExtension;
                 }
 
                 if (!extensions.empty())
-                    result.push_back(filter.name + "|" + extensions);
-#endif
+                    result.push_back(std::string(name) + "|" + extensions);
             }
+#endif
 
             return result;
         }
