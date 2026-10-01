@@ -1,6 +1,8 @@
 #pragma once
 
+#include <photinox/dialogs.hpp>
 #include <photinox/enums.hpp>
+#include <photinox/geometry.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -8,6 +10,8 @@
 namespace photinox::native
 {
     using Utf8String = const char*;
+
+    using GetAllMonitorsCallback = bool (*)(const Monitor* monitor, void* state);
 
     using CreatedCallback = void (*)(void* instance, bool registered, void* state);
     using ClosingCallback = bool (*)(void* state);
@@ -63,6 +67,7 @@ namespace photinox::native
         bool chromeless;
         bool transparent;
         bool useNativeWindowOwner;
+        bool showOnInitialize;
     };
 
     static_assert(std::is_standard_layout_v<WindowInitOptions>);
@@ -136,7 +141,7 @@ namespace photinox::native
 
     struct WindowInitParams
     {
-        static constexpr int NativeAbiVersion = 7;
+        static constexpr int NativeAbiVersion = 8;
 
         int size;
         int abiVersion;

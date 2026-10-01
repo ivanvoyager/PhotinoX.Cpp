@@ -3,6 +3,7 @@
 #include <photinox/callbacks.hpp>
 #include <photinox/dispatcher.hpp>
 #include <photinox/event_token.hpp>
+#include <photinox/runtime_info.hpp>
 #include <photinox/window_collection.hpp>
 
 #include <any>
@@ -47,6 +48,9 @@ namespace photinox
         Application& SetShutdownMode(ShutdownMode shutdownMode);
 
         [[nodiscard]] std::string_view NativeVersion() const noexcept;
+        [[nodiscard]] RuntimeInfo GetRuntimeInfo() const;
+
+        Application& SetWebView2RuntimePath(std::string_view path);
 
         [[nodiscard]] bool IsRunning() const noexcept;
         [[nodiscard]] bool IsShuttingDown() const noexcept;
@@ -55,6 +59,8 @@ namespace photinox
         [[nodiscard]] const Dispatcher& GetDispatcher() const noexcept;
 
         [[nodiscard]] Window* MainWindow() const noexcept;
+        Application& SetMainWindow(Window* mainWindow);
+
         [[nodiscard]] WindowCollection& Windows() noexcept;
         [[nodiscard]] const WindowCollection& Windows() const noexcept;
 
@@ -103,7 +109,8 @@ namespace photinox
         class Impl;
         std::unique_ptr<Impl> impl_;
 
-        [[nodiscard]] native::Library& NativeLibrary() noexcept;
+        [[nodiscard]] native::Library& NativeLibrary() const noexcept;
+
         void ThrowIfRunning(std::string_view memberName) const;
 
         void CloseWindows();

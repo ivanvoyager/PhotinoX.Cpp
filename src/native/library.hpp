@@ -1,10 +1,14 @@
 #pragma once
 
-#include <photinox/callbacks.hpp>
+#include <photinox/geometry.hpp>
 
 #include "application.hpp"
+#include "callbacks.hpp"
 #include "notification.hpp"
+#include "runtime_info.hpp"
 #include "window.hpp"
+
+#include <string>
 
 namespace photinox::native
 {
@@ -21,6 +25,17 @@ namespace photinox::native
         Library& operator=(Library&&) = delete;
 
         [[nodiscard]] const char* GetVersion() const noexcept;
+        [[nodiscard]] RuntimeInfo GetRuntimeInfo() const noexcept;
+
+        [[nodiscard]] bool SetWebView2RuntimePath(Utf8String path) const noexcept;
+
+        //memory
+        [[nodiscard]] void* AllocateMemory(int size) const noexcept;
+        void FreeMemory(void* value) const noexcept;
+
+        [[nodiscard]] char* AllocateString(int size) const noexcept;
+        void FreeString(char* value) const noexcept;
+        void FreeStringArray(char** values, int count) const noexcept;
 
         //application
         [[nodiscard]] int ApplicationRun(const ApplicationInitParams* initParams) const;
@@ -34,10 +49,134 @@ namespace photinox::native
         [[nodiscard]] int ApplicationShowNotification(const NotificationShowParams* showParams) const;
         [[nodiscard]] bool ApplicationGetNotificationsEnabled() const noexcept;
         void ApplicationSetNotificationsEnabled(bool enabled) const noexcept;
+
         //window
         [[nodiscard]] void* WindowCreate(WindowInitParams* initParams) const;
         [[nodiscard]] bool WindowShow(void* instance) const;
+        [[nodiscard]] bool WindowHide(void* instance) const noexcept;
+        [[nodiscard]] bool WindowCenter(void* instance) const noexcept;
+        [[nodiscard]] bool WindowActivate(void* instance) const noexcept;
+        [[nodiscard]] bool WindowMaximize(void* instance) const noexcept;
+        [[nodiscard]] bool WindowMinimize(void* instance) const noexcept;
+        [[nodiscard]] bool WindowRestore(void* instance) const noexcept;
         void WindowClose(void* instance) const noexcept;
+
+        [[nodiscard]] std::string WindowGetTitle(void* instance) const;
+        void WindowSetTitle(void* instance, Utf8String title) const noexcept;
+
+        [[nodiscard]] std::string WindowGetIconFile(void* instance) const;
+        void WindowSetIconFile(void* instance, Utf8String iconFile) const noexcept;
+
+        [[nodiscard]] Point WindowGetPosition(void* instance) const noexcept;
+        void WindowSetPosition(void* instance, Point position) const noexcept;
+
+        [[nodiscard]] Size WindowGetSize(void* instance) const noexcept;
+        void WindowSetSize(void* instance, Size size) const noexcept;
+
+        void WindowSetMinSize(void* instance, Size size) const noexcept;
+        void WindowSetMaxSize(void* instance, Size size) const noexcept;
+
+        [[nodiscard]] bool WindowGetFullScreen(void* instance) const noexcept;
+        void WindowSetFullScreen(void* instance, bool fullScreen) const noexcept;
+
+        [[nodiscard]] bool WindowGetMaximized(void* instance) const noexcept;
+        void WindowSetMaximized(void* instance, bool maximized) const noexcept;
+
+        [[nodiscard]] bool WindowGetMinimized(void* instance) const noexcept;
+        void WindowSetMinimized(void* instance, bool minimized) const noexcept;
+
+        [[nodiscard]] WindowState WindowGetState(void* instance) const noexcept;
+        void WindowSetState(void* instance, WindowState state) const noexcept;
+
+        [[nodiscard]] bool WindowGetResizable(void* instance) const noexcept;
+        void WindowSetResizable(void* instance, bool resizable) const noexcept;
+
+        [[nodiscard]] bool WindowGetTopmost(void* instance) const noexcept;
+        void WindowSetTopmost(void* instance, bool topmost) const noexcept;
+
+        [[nodiscard]] bool WindowGetVisible(void* instance) const noexcept;
+
+        [[nodiscard]] void* WindowGetHandle(void* instance) const noexcept;
+        void WindowBeginDrag(void* instance) const noexcept;
+        void WindowBeginResize(void* instance, WindowEdge edge) const noexcept;
+        [[nodiscard]] unsigned int WindowGetScreenDpi(void* instance) const noexcept;
+
+        [[nodiscard]] bool WindowGetAllMonitors(void* instance, GetAllMonitorsCallback callback, void* state) const noexcept;
+        [[nodiscard]] bool WindowGetMonitor(void* instance, Monitor& monitor) const noexcept;
+
+        [[nodiscard]] bool WindowSetChromelessDragRegions(void* instance,
+                                                          const LayoutRegion* dragRegions, int dragRegionCount,
+                                                          const LayoutRegion* noDragRegions, int noDragRegionCount) const noexcept;
+
+        [[nodiscard]] bool WindowSetChromelessResizeBorderThickness(void* instance, int thickness) const noexcept;
+
+        // appearance
+        [[nodiscard]] bool WindowGetTransparentEnabled(void* instance) const noexcept;
+        void WindowSetTransparentEnabled(void* instance, bool enabled) const noexcept;
+
+        //browser
+        void WindowNavigateToString(void* instance, Utf8String content) const noexcept;
+        void WindowNavigateToUrl(void* instance, Utf8String url) const noexcept;
+        void WindowSendWebMessage(void* instance, Utf8String message) const noexcept;
+        [[nodiscard]] bool WindowAddCustomSchemeName(void* instance, Utf8String scheme) const noexcept;
+
+        [[nodiscard]] bool WindowGetContextMenuEnabled(void* instance) const noexcept;
+        void WindowSetContextMenuEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] bool WindowGetZoomEnabled(void* instance) const noexcept;
+        void WindowSetZoomEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] bool WindowGetStatusBarEnabled(void* instance) const noexcept;
+        void WindowSetStatusBarEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] bool WindowGetDevToolsEnabled(void* instance) const noexcept;
+        void WindowSetDevToolsEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] int WindowGetZoom(void* instance) const noexcept;
+        void WindowSetZoom(void* instance, int zoom) const noexcept;
+
+        [[nodiscard]] bool WindowGetGrantBrowserPermissions(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetMediaAutoplayEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetFileSystemAccessEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetWebSecurityEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetJavascriptClipboardAccessEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetMediaStreamEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetSmoothScrollingEnabled(void* instance) const noexcept;
+        [[nodiscard]] bool WindowGetIgnoreCertificateErrorsEnabled(void* instance) const noexcept;
+
+        [[nodiscard]] std::string WindowGetUserAgent(void* instance) const;
+        void WindowClearBrowserAutoFill(void* instance) const noexcept;
+
+        // dialogs
+
+        [[nodiscard]] std::vector<std::string> WindowShowOpenFile(
+            void* instance,
+            Utf8String title,
+            Utf8String defaultPath,
+            bool multiSelect,
+            Utf8String* filters,
+            int filterCount) const;
+
+        [[nodiscard]] std::vector<std::string> WindowShowOpenFolder(
+            void* instance,
+            Utf8String title,
+            Utf8String defaultPath,
+            bool multiSelect) const;
+
+        [[nodiscard]] std::string WindowShowSaveFile(
+            void* instance,
+            Utf8String title,
+            Utf8String defaultPath,
+            Utf8String* filters,
+            int filterCount,
+            Utf8String defaultFileName) const;
+
+        [[nodiscard]] DialogResult WindowShowMessage(
+            void* instance,
+            Utf8String title,
+            Utf8String text,
+            DialogButtons buttons,
+            DialogIcon icon) const noexcept;
 
     private:
         template<typename T>
@@ -46,6 +185,16 @@ namespace photinox::native
         void* handle_ = nullptr;
 
         const char* (*getVersion_)() = nullptr;
+        RuntimeInfo(*getRuntimeInfo_)() = nullptr;
+
+        bool (*setWebView2RuntimePath_)(Utf8String) = nullptr;
+
+        //memory
+        void* (*allocateMemory_)(int) = nullptr;
+        void (*freeMemory_)(void*) = nullptr;
+        char* (*allocateString_)(int) = nullptr;
+        void (*freeString_)(char*) = nullptr;
+        void (*freeStringArray_)(char**, int) = nullptr;
 
         //application
         int (*applicationRun_)(const ApplicationInitParams*) = nullptr;
@@ -62,6 +211,98 @@ namespace photinox::native
         //window
         void* (*windowCreate_)(WindowInitParams*) = nullptr;
         bool (*windowShow_)(void*) = nullptr;
+        bool (*windowHide_)(void*) = nullptr;
+        bool (*windowCenter_)(void*) = nullptr;
+        bool (*windowActivate_)(void*) = nullptr;
+        bool (*windowMaximize_)(void*) = nullptr;
+        bool (*windowMinimize_)(void*) = nullptr;
+        bool (*windowRestore_)(void*) = nullptr;
         void (*windowClose_)(void*) = nullptr;
+
+        char* (*windowGetTitle_)(void*) = nullptr;
+        void (*windowSetTitle_)(void*, Utf8String) = nullptr;
+
+        char* (*windowGetIconFile_)(void*) = nullptr;
+        void (*windowSetIconFile_)(void*, Utf8String) = nullptr;
+
+        void (*windowGetPosition_)(void*, int*, int*) = nullptr;
+        void (*windowSetPosition_)(void*, int, int) = nullptr;
+
+        void (*windowGetSize_)(void*, int*, int*) = nullptr;
+        void (*windowSetSize_)(void*, int, int) = nullptr;
+
+        void (*windowSetMinSize_)(void*, int, int) = nullptr;
+        void (*windowSetMaxSize_)(void*, int, int) = nullptr;
+
+        void (*windowGetFullScreen_)(void*, bool*) = nullptr;
+        void (*windowSetFullScreen_)(void*, bool) = nullptr;
+
+        void (*windowGetMaximized_)(void*, bool*) = nullptr;
+        void (*windowSetMaximized_)(void*, bool) = nullptr;
+
+        void (*windowGetMinimized_)(void*, bool*) = nullptr;
+        void (*windowSetMinimized_)(void*, bool) = nullptr;
+
+        void (*windowGetState_)(void*, WindowState*) = nullptr;
+        void (*windowSetState_)(void*, WindowState) = nullptr;
+
+        void (*windowGetResizable_)(void*, bool*) = nullptr;
+        void (*windowSetResizable_)(void*, bool) = nullptr;
+
+        void (*windowGetTopmost_)(void*, bool*) = nullptr;
+        void (*windowSetTopmost_)(void*, bool) = nullptr;
+
+        void (*windowGetVisible_)(void*, bool*) = nullptr;
+
+        void (*windowGetTransparentEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetTransparentEnabled_)(void*, bool) = nullptr;
+
+        void* (*windowGetHandle_)(void*) = nullptr;
+        void (*windowBeginDrag_)(void*) = nullptr;
+        void (*windowBeginResize_)(void*, WindowEdge) = nullptr;
+        unsigned int (*windowGetScreenDpi_)(void*) = nullptr;
+        bool (*windowGetAllMonitors_)(void*, GetAllMonitorsCallback, void*) = nullptr;
+        bool (*windowGetMonitor_)(void*, Monitor*) = nullptr;
+        bool (*windowSetChromelessDragRegions_)(void*, const LayoutRegion*, int, const LayoutRegion*, int) = nullptr;
+        bool (*windowSetChromelessResizeBorderThickness_)(void*, int) = nullptr;
+
+        //browser
+        void (*windowNavigateToString_)(void*, Utf8String) = nullptr;
+        void (*windowNavigateToUrl_)(void*, Utf8String) = nullptr;
+        void (*windowSendWebMessage_)(void*, Utf8String) = nullptr;
+        bool (*windowAddCustomSchemeName_)(void*, Utf8String) = nullptr;
+
+        void (*windowGetContextMenuEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetContextMenuEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetZoomEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetZoomEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetStatusBarEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetStatusBarEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetDevToolsEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetDevToolsEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetZoom_)(void*, int*) = nullptr;
+        void (*windowSetZoom_)(void*, int) = nullptr;
+
+        void (*windowGetGrantBrowserPermissions_)(void*, bool*) = nullptr;
+        void (*windowGetMediaAutoplayEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetFileSystemAccessEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetWebSecurityEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetJavascriptClipboardAccessEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetMediaStreamEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetSmoothScrollingEnabled_)(void*, bool*) = nullptr;
+        void (*windowGetIgnoreCertificateErrorsEnabled_)(void*, bool*) = nullptr;
+
+        char* (*windowGetUserAgent_)(void*) = nullptr;
+        void (*windowClearBrowserAutoFill_)(void*) = nullptr;
+
+        //dialogs
+        char** (*windowShowOpenFile_)(void*, Utf8String, Utf8String, bool, Utf8String*, int, int*) = nullptr;
+        char** (*windowShowOpenFolder_)(void*, Utf8String, Utf8String, bool, int*) = nullptr;
+        char* (*windowShowSaveFile_)(void*, Utf8String, Utf8String, Utf8String*, int, Utf8String) = nullptr;
+        DialogResult(*windowShowMessage_)(void*, Utf8String, Utf8String, DialogButtons, DialogIcon) = nullptr;
     };
 }

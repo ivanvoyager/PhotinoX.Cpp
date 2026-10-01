@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
     PhotinoX.Cpp
-    VERSION 5.2.2
+    VERSION 5.3.3
     LANGUAGES CXX
 )
 
@@ -25,14 +25,17 @@ add_library(PhotinoX::Cpp ALIAS PhotinoX.Cpp)
 target_sources(
     PhotinoX.Cpp
     PRIVATE
+        src/native/application.hpp
+        src/native/callbacks.hpp
         src/native/library.cpp
         src/native/library.hpp
-        src/native/application.hpp
         src/native/notification.hpp
+        src/native/runtime_info.hpp
         src/native/window.hpp
         src/application.cpp
         src/dispatcher.cpp
         src/event_token.cpp
+        src/platform_paths.cpp
         src/window.cpp
         src/window_collection.cpp
     PUBLIC
@@ -41,11 +44,15 @@ target_sources(
         FILES
             include/photinox/application.hpp
             include/photinox/callbacks.hpp
+            include/photinox/dialogs.hpp
             include/photinox/dispatcher.hpp
             include/photinox/enums.hpp
             include/photinox/event_args.hpp
             include/photinox/event_token.hpp
+            include/photinox/geometry.hpp
             include/photinox/photinox.hpp
+            include/photinox/platform.hpp
+            include/photinox/runtime_info.hpp
             include/photinox/window.hpp
             include/photinox/window_collection.hpp
 )
@@ -74,6 +81,14 @@ if(CMAKE_DL_LIBS)
         PhotinoX.Cpp
         PRIVATE
             ${CMAKE_DL_LIBS}
+    )
+endif()
+
+if(WIN32)
+    target_link_libraries(
+        PhotinoX.Cpp
+        PRIVATE
+            Shell32
     )
 endif()
 

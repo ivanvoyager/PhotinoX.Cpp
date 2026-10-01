@@ -22,7 +22,7 @@ namespace photinox
         struct InvokeState final
         {
             DispatcherCallback callback;
-            std::exception_ptr exception;
+            std::exception_ptr exception = nullptr;
             const Dispatcher* dispatcher = nullptr;
         };
 

@@ -1,10 +1,13 @@
 #pragma once
 
 #include <photinox/enums.hpp>
+#include <photinox/geometry.hpp>
 
 #include <any>
+#include <cstddef>
 #include <span>
 #include <string>
+#include <vector>
 
 namespace photinox
 {
@@ -64,5 +67,54 @@ namespace photinox
     struct ClosingEventArgs
     {
         bool cancel = false;
+    };
+
+    struct SizeChangedEventArgs
+    {
+        Size size;
+    };
+
+    struct LocationChangedEventArgs
+    {
+        Point location;
+    };
+
+    struct StateChangedEventArgs
+    {
+        WindowState oldState;
+        WindowState newState;
+    };
+
+    struct WebMessageReceivedEventArgs
+    {
+        std::string message;
+        std::string uri;
+    };
+
+    struct NavigationStartingEventArgs
+    {
+        std::string uri;
+        bool cancel = false;
+    };
+
+    struct NewWindowRequestedEventArgs
+    {
+        std::string uri;
+    };
+
+    struct ContentLoadingEventArgs
+    {
+        std::string uri;
+    };
+
+    struct ContentLoadedEventArgs
+    {
+        std::string uri;
+    };
+
+    struct CustomSchemeResponse
+    {
+        std::vector<std::byte> content;
+        std::string contentType;
     };
 }

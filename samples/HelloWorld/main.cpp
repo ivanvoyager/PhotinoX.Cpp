@@ -6,36 +6,54 @@
 using namespace photinox;
 
 int main()
-{   
-    Application application;
-    Window window(application);
-
-    application.SetShutdownMode(ShutdownMode::OnMainWindowClose);
-
-    const EventToken startupToken = application.SubscribeStartupHandler([]
+{
+    try
     {
-        std::cout << "Subscribed startup handler\n";
-    });
-    assert(startupToken);
+        Application application;
+        Window window(application);
 
-    EventToken exitToken;
+        application.SetShutdownMode(ShutdownMode::OnMainWindowClose);
 
-    exitToken = application.SubscribeExitHandler([&](ExitEventArgs&)
+        const EventToken startupToken = application.SubscribeStartupHandler([]
         {
-            std::cout << "Subscribed exit handler\n";
-            bool removed = application.UnsubscribeExitHandler(exitToken);
-            assert(removed);
+                std::cout << "Subscribed startup handler\n";
         });
+        assert(startupToken);
 
-    window
-        .SetTitle("PhotinoX.Cpp HelloWorld")
-        .LoadString(
-            "<!DOCTYPE html>"
-            "<html>"
-            "<body>"
-            "<h1>PhotinoX.Cpp</h1>"
-            "</body>"
-            "</html>")
+        EventToken exitToken;
+
+        exitToken = application.SubscribeExitHandler([&](ExitEventArgs&)
+            {
+                    std::cout << "Subscribed exit handler\n";
+                    bool removed = application.UnsubscribeExitHandler(exitToken);
+                    assert(removed);
+            });
+
+        window
+            .SetTitle("PhotinoX.Cpp HelloWorld")
+            .Center()
+            .LoadString(R"(
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <meta charset="utf-8">
+            <title>PhotinoX.Cpp Web Messaging</title>
+        </head>
+        <body>
+            <h1>Web messaging</h1>
+            <button id="send-message">Send message to C++</button>
+
+            <script>
+                document
+                    .getElementById("send-message")
+                    .addEventListener("click", () =>
+                    {
+                        window.external.sendMessage("Hello from JavaScript");
+                    });
+            </script>
+        </body>
+    </html>
+)")
         .RegisterCreatingHandler([]
         {
             std::cout << "Creating window" << '\n';
@@ -62,91 +80,129 @@ int main()
             std::cout << "Closed window, count: " << application.Windows().Size() << '\n';
 
             assert(application.Windows().Empty());
-        });
-
-    application
-        .SetName("PhotinoX.Cpp HelloWorld")
-        .SetNotificationsEnabled(false)
-        .RegisterStartupHandler([&application]
-        {
-            std::cout << "Startup handler: " << application.Name() << '\n';
-            std::cout << "Notifications enabled: " << application.NotificationsEnabled() << '\n';
-
-            application.SetNotificationsEnabled(true);
-
-            std::cout << "Notifications enabled: " << application.NotificationsEnabled() << '\n';
         })
-        .RegisterExitHandler([](ExitEventArgs& args)
+        .RegisterWebMessageReceivedHandler([](const WebMessageReceivedEventArgs& args)
         {
-            std::cout << "Exit handler: " << args.applicationExitCode  << '\n';
+            std::cout << "Message: " << args.message << '\n';
+            std::cout << "Source: " << args.uri << '\n';
         });
 
-
-    const EventToken exceptionToken =
-        application.GetDispatcher().SubscribeUnhandledExceptionHandler(
-            [](std::exception_ptr exception)
+        application
+            .SetName("PhotinoX.Cpp HelloWorld")
+            .SetNotificationsEnabled(false)
+            .RegisterStartupHandler([&application]
             {
-                try
-                {
-                    std::rethrow_exception(exception);
-                }
-                catch (const std::exception& ex)
-                {
-                    std::cout << "Unhandled dispatcher exception: " << ex.what() << '\n';
-                }
+                    std::cout << "Startup handler: " << application.Name() << '\n';
+                    std::cout << "Notifications enabled: " << application.NotificationsEnabled() << '\n';
+
+                    application.SetNotificationsEnabled(true);
+
+                    std::cout << "Notifications enabled: " << application.NotificationsEnabled() << '\n';
+            })
+            .RegisterExitHandler([](ExitEventArgs& args)
+            {
+                    std::cout << "Exit handler: " << args.applicationExitCode << '\n';
             });
 
-    application.RegisterNotificationActivatedHandler([](const NotificationActivatedEventArgs& args)
+
+        const EventToken exceptionToken =
+            application.GetDispatcher().SubscribeUnhandledExceptionHandler(
+                [](std::exception_ptr exception)
+                {
+                        try
+                        {
+                            std::rethrow_exception(exception);
+                        }
+                        catch (const std::exception& ex)
+                        {
+                            std::cout << "Unhandled dispatcher exception: " << ex.what() << '\n';
+                        }
+                });
+
+        application.RegisterNotificationActivatedHandler([](const NotificationActivatedEventArgs& args)
+        {
+                std::cout << "Notification activated: " << args.notificationId << '\n';
+
+                if (const auto* state = std::any_cast<std::string>(&args.state))
+                    std::cout << "Notification state: " << *state << '\n';
+        });
+
+        application.RegisterNotificationActionActivatedHandler([](const NotificationActionActivatedEventArgs& args)
+        {
+                std::cout << "Notification action activated: " << args.notificationId << ", action: " << args.actionIndex << '\n';
+        });
+
+        application.RegisterNotificationInputActivatedHandler([](const NotificationInputActivatedEventArgs& args)
+        {
+                std::cout << "Notification input activated: " << args.notificationId << ", response: " << args.response << '\n';
+        });
+
+        application.RegisterNotificationDismissedHandler([](const NotificationDismissedEventArgs& args)
+        {
+                std::cout << "Notification dismissed: " << args.notificationId << " Reason: " << (int)args.reason << '\n';
+
+                if (const auto* state = std::any_cast<std::string>(&args.state))
+                    std::cout << "Notification state: " << *state << '\n';
+        });
+
+        application.RegisterNotificationFailedHandler([](const NotificationFailedEventArgs& args)
+        {
+                std::cout << "Notification failed: " << args.notificationId << '\n';
+        });
+
+        application.RegisterStartupHandler([&application]
+        {
+                const int notificationId = application.ShowNotification(
+                    "PhotinoX",
+                    "Notification test",
+                    {},
+                    std::string("Test state"));
+
+                std::cout << "ShowNotification result: " << notificationId << '\n';
+        });
+
+        application.Windows().RegisterCollectionChangedHandler(
+        [](const WindowCollectionChangedEventArgs& args)
+        {
+                if (args.action == NotifyCollectionChangedAction::Add)
+                    std::cout << "Windows added: " << args.newItems.size() << '\n';
+
+                if (args.action == NotifyCollectionChangedAction::Remove)
+                    std::cout << "Windows removed: " << args.oldItems.size() << '\n';
+        });
+
+        const RuntimeInfo info = application.GetRuntimeInfo();
+
+        std::cout << "Native: " << info.nativeVersion << '\n';
+        std::cout << "WebView engine: " << info.webViewEngine << '\n';
+        std::cout << "WebView runtime: " << info.webViewRuntimeVersion << '\n';
+
+        std::visit([](const auto& platform)
+        {
+            using TPlatform = std::decay_t<decltype(platform)>;
+
+            if constexpr (std::same_as<TPlatform, WindowsRuntimeInfo>)
+            {
+                std::cout << "WebView2: " << platform.webView2RuntimeVersion << '\n';
+            }
+            else if constexpr (std::same_as<TPlatform, LinuxRuntimeInfo>)
+            {
+                std::cout << "glibc: " << platform.glibcVersion << '\n';
+                std::cout << "GTK: " << platform.gtkVersion << '\n';
+                std::cout << "WebKitGTK API: " << platform.webKitGtkApiTarget << '\n';
+                std::cout << "WebKitGTK: " << platform.webKitGtkRuntimeVersion << '\n';
+            }
+            else if constexpr (std::same_as<TPlatform, MacOSRuntimeInfo>)
+            {
+                std::cout << "WebKit: " << platform.webKitVersion << '\n';
+            }
+        }, info.platform);
+
+        return application.Run(&window);
+    }
+    catch (const std::exception& exception)
     {
-        std::cout << "Notification activated: " << args.notificationId << '\n';
-
-        if (const auto* state = std::any_cast<std::string>(&args.state))
-            std::cout << "Notification state: " << *state << '\n';
-    });
-
-    application.RegisterNotificationActionActivatedHandler([](const NotificationActionActivatedEventArgs& args)
-    {
-        std::cout << "Notification action activated: " << args.notificationId << ", action: " << args.actionIndex << '\n';
-    });
-
-    application.RegisterNotificationInputActivatedHandler([](const NotificationInputActivatedEventArgs& args)
-    {
-        std::cout << "Notification input activated: " << args.notificationId << ", response: " << args.response << '\n';
-    });
-
-    application.RegisterNotificationDismissedHandler([](const NotificationDismissedEventArgs& args)
-    {
-        std::cout << "Notification dismissed: " << args.notificationId << " Reason: " << (int)args.reason << '\n';
-
-        if (const auto* state = std::any_cast<std::string>(&args.state))
-            std::cout << "Notification state: " << *state << '\n';
-    });
-
-    application.RegisterNotificationFailedHandler([](const NotificationFailedEventArgs& args)
-    {
-        std::cout << "Notification failed: " << args.notificationId << '\n';
-    });
-
-    application.RegisterStartupHandler([&application]
-    {
-        const int notificationId = application.ShowNotification(
-            "PhotinoX",
-            "Notification test",
-            {},
-            std::string("Test state"));
-
-        std::cout << "ShowNotification result: " << notificationId << '\n';
-    });
-
-    application.Windows().RegisterCollectionChangedHandler(
-    [](const WindowCollectionChangedEventArgs& args)
-    {
-        if (args.action == NotifyCollectionChangedAction::Add)
-            std::cout << "Windows added: " << args.newItems.size() << '\n';
-
-        if (args.action == NotifyCollectionChangedAction::Remove)
-            std::cout << "Windows removed: " << args.oldItems.size() << '\n';
-    });
-
-    return application.Run(&window);
+        std::cerr << exception.what() << '\n';
+        return 1;
+    }
 }

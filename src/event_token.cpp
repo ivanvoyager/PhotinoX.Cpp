@@ -2,7 +2,7 @@
 
 #include <atomic>
 
-namespace photinox
+namespace photinox::detail
 {
     std::uint64_t NextEventOwnerId() noexcept
     {

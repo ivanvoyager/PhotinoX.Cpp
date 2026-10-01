@@ -46,4 +46,35 @@ namespace photinox
         OnExplicitShutdown
     };
     static_assert(sizeof(ShutdownMode) == sizeof(int));
+
+    enum class WindowEdge : int
+    {
+        Top,
+        Bottom,
+        Left,
+        Right,
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    };
+    static_assert(sizeof(WindowEdge) == sizeof(int));
+
+    enum class HorizontalAlignment : int
+    {
+        Left = 0,
+        Center = 1,
+        Right = 2,
+        Stretch = 3
+    };
+    static_assert(sizeof(HorizontalAlignment) == sizeof(int));
+
+    enum class VerticalAlignment : int
+    {
+        Top = 0,
+        Center = 1,
+        Bottom = 2,
+        Stretch = 3
+    };
+    static_assert(sizeof(VerticalAlignment) == sizeof(int));
 }
