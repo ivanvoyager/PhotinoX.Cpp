@@ -1,6 +1,7 @@
 #pragma once
 
 #include <photinox/callbacks.hpp>
+#include <photinox/dialogs.hpp>
 #include <photinox/event_token.hpp>
 #include <photinox/geometry.hpp>
 
@@ -222,6 +223,31 @@ namespace photinox
         void Show();
         void Hide();
         void Close();
+
+        // Dialogs
+
+        [[nodiscard]] std::vector<std::string> ShowOpenFile(
+            std::string_view title = "Choose file",
+            std::string_view defaultPath = {},
+            bool multiSelect = false,
+            std::span<const FileDialogFilter> filters = {});
+
+        [[nodiscard]] std::vector<std::string> ShowOpenFolder(
+            std::string_view title = "Select folder",
+            std::string_view defaultPath = {},
+            bool multiSelect = false);
+
+        [[nodiscard]] std::string ShowSaveFile(
+            std::string_view title = "Save file",
+            std::string_view defaultPath = {},
+            std::span<const FileDialogFilter> filters = {},
+            std::string_view defaultFileName = {});
+
+        [[nodiscard]] DialogResult ShowMessage(
+            std::string_view title,
+            std::string_view text,
+            DialogButtons buttons = DialogButtons::Ok,
+            DialogIcon icon = DialogIcon::Info);
 
         // Event handlers
 

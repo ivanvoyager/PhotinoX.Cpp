@@ -1,5 +1,6 @@
 #pragma once
 
+#include <photinox/dialogs.hpp>
 #include <photinox/enums.hpp>
 #include <photinox/geometry.hpp>
 

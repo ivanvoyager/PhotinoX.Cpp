@@ -143,6 +143,37 @@ namespace photinox::native
         [[nodiscard]] std::string WindowGetUserAgent(void* instance) const;
         void WindowClearBrowserAutoFill(void* instance) const noexcept;
 
+        // dialogs
+
+        [[nodiscard]] std::vector<std::string> WindowShowOpenFile(
+            void* instance,
+            Utf8String title,
+            Utf8String defaultPath,
+            bool multiSelect,
+            Utf8String* filters,
+            int filterCount) const;
+
+        [[nodiscard]] std::vector<std::string> WindowShowOpenFolder(
+            void* instance,
+            Utf8String title,
+            Utf8String defaultPath,
+            bool multiSelect) const;
+
+        [[nodiscard]] std::string WindowShowSaveFile(
+            void* instance,
+            Utf8String title,
+            Utf8String defaultPath,
+            Utf8String* filters,
+            int filterCount,
+            Utf8String defaultFileName) const;
+
+        [[nodiscard]] DialogResult WindowShowMessage(
+            void* instance,
+            Utf8String title,
+            Utf8String text,
+            DialogButtons buttons,
+            DialogIcon icon) const noexcept;
+
     private:
         template<typename T>
         [[nodiscard]] T LoadExport(const char* name) const;
@@ -260,5 +291,11 @@ namespace photinox::native
 
         char* (*windowGetUserAgent_)(void*) = nullptr;
         void (*windowClearBrowserAutoFill_)(void*) = nullptr;
+
+        //dialogs
+        char** (*windowShowOpenFile_)(void*, Utf8String, Utf8String, bool, Utf8String*, int, int*) = nullptr;
+        char** (*windowShowOpenFolder_)(void*, Utf8String, Utf8String, bool, int*) = nullptr;
+        char* (*windowShowSaveFile_)(void*, Utf8String, Utf8String, Utf8String*, int, Utf8String) = nullptr;
+        DialogResult(*windowShowMessage_)(void*, Utf8String, Utf8String, DialogButtons, DialogIcon) = nullptr;
     };
 }

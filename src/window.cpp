@@ -133,6 +133,78 @@ namespace photinox
             }
         }
 
+        std::string NormalizeMacExtension(std::string_view extension)
+        {
+            while (!extension.empty() && (extension.front() == '*' || extension.front() == '.'))
+                extension.remove_prefix(1);
+
+            return std::string(extension);
+        }
+
+        std::string NormalizeFileExtension(std::string_view extension)
+        {
+            if (extension == "*")
+                return "*";
+
+            while (!extension.empty() && extension.front() == '*')
+                extension.remove_prefix(1);
+
+            if (!extension.empty() && extension.front() == '.')
+                return "*" + std::string(extension);
+
+            return "*." + std::string(extension);
+        }
+
+        std::vector<std::string> CreateNativeFilters(std::span<const FileDialogFilter> filters)
+        {
+            std::vector<std::string> result;
+
+            for (const FileDialogFilter& filter : filters)
+            {
+#ifdef __APPLE__
+                for (const std::string& extension : filter.extensions)
+                {
+                    if (extension.empty())
+                        continue;
+
+                    result.push_back(NormalizeMacExtension(extension));
+                }
+#else
+                if (filter.name.empty())
+                    continue;
+
+                std::string extensions;
+
+                for (const std::string& extension : filter.extensions)
+                {
+                    if (extension.empty())
+                        continue;
+
+                    if (!extensions.empty())
+                        extensions += ';';
+
+                    extensions += NormalizeFileExtension(extension);
+                }
+
+                if (!extensions.empty())
+                    result.push_back(filter.name + "|" + extensions);
+#endif
+            }
+
+            return result;
+        }
+
+        std::vector<native::Utf8String> GetStringPointers(const std::vector<std::string>& values)
+        {
+            std::vector<native::Utf8String> result;
+            result.reserve(values.size());
+
+            for (const std::string& value : values)
+                result.push_back(value.c_str());
+
+            return result;
+        }
+
     } // namespace
 
     class Window::Impl final
@@ -2474,6 +2546,107 @@ namespace photinox
         GetDispatcher().Invoke([this]
         {
             impl_->NativeLibrary().WindowClose(impl_->nativeInstance);
+        });
+    }
+
+    // Dialogs
+
+    std::vector<std::string> Window::ShowOpenFile(
+        std::string_view title,
+        std::string_view defaultPath,
+        bool multiSelect,
+        std::span<const FileDialogFilter> filters)
+    {
+        impl_->ThrowIfClosedOrNotInitialized("ShowOpenFile");
+
+        std::string titleValue(title);
+        std::string defaultPathValue(defaultPath);
+        auto nativeFilters = CreateNativeFilters(filters);
+        auto filterPointers = GetStringPointers(nativeFilters);
+
+        if (filterPointers.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+            throw std::invalid_argument("Too many file dialog filters.");
+
+        return GetDispatcher().Invoke([this, &titleValue, &defaultPathValue, multiSelect, &filterPointers]
+        {
+            return impl_->NativeLibrary().WindowShowOpenFile(
+                impl_->nativeInstance,
+                titleValue.c_str(),
+                defaultPathValue.empty() ? nullptr : defaultPathValue.c_str(),
+                multiSelect,
+                filterPointers.empty() ? nullptr : filterPointers.data(),
+                static_cast<int>(filterPointers.size()));
+        });
+    }
+
+    std::vector<std::string> Window::ShowOpenFolder(
+        std::string_view title,
+        std::string_view defaultPath,
+        bool multiSelect)
+    {
+        impl_->ThrowIfClosedOrNotInitialized("ShowOpenFolder");
+
+        std::string titleValue(title);
+        std::string defaultPathValue(defaultPath);
+
+        return GetDispatcher().Invoke([this, &titleValue, &defaultPathValue, multiSelect]
+        {
+            return impl_->NativeLibrary().WindowShowOpenFolder(
+                impl_->nativeInstance,
+                titleValue.c_str(),
+                defaultPathValue.empty() ? nullptr : defaultPathValue.c_str(),
+                multiSelect);
+        });
+    }
+
+    std::string Window::ShowSaveFile(
+        std::string_view title,
+        std::string_view defaultPath,
+        std::span<const FileDialogFilter> filters,
+        std::string_view defaultFileName)
+    {
+        impl_->ThrowIfClosedOrNotInitialized("ShowSaveFile");
+
+        std::string titleValue(title);
+        std::string defaultPathValue(defaultPath);
+        std::string defaultFileNameValue(defaultFileName);
+        auto nativeFilters = CreateNativeFilters(filters);
+        auto filterPointers = GetStringPointers(nativeFilters);
+
+        if (filterPointers.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+            throw std::invalid_argument("Too many file dialog filters.");
+
+        return GetDispatcher().Invoke([this, &titleValue, &defaultPathValue, &filterPointers, &defaultFileNameValue]
+        {
+            return impl_->NativeLibrary().WindowShowSaveFile(
+                impl_->nativeInstance,
+                titleValue.c_str(),
+                defaultPathValue.empty() ? nullptr : defaultPathValue.c_str(),
+                filterPointers.empty() ? nullptr : filterPointers.data(),
+                static_cast<int>(filterPointers.size()),
+                defaultFileNameValue.empty() ? nullptr : defaultFileNameValue.c_str());
+        });
+    }
+
+    DialogResult Window::ShowMessage(
+        std::string_view title,
+        std::string_view text,
+        DialogButtons buttons,
+        DialogIcon icon)
+    {
+        impl_->ThrowIfClosedOrNotInitialized("ShowMessage");
+
+        std::string titleValue(title);
+        std::string textValue(text);
+
+        return GetDispatcher().Invoke([this, &titleValue, &textValue, buttons, icon]
+        {
+            return impl_->NativeLibrary().WindowShowMessage(
+                impl_->nativeInstance,
+                titleValue.c_str(),
+                textValue.c_str(),
+                buttons,
+                icon);
         });
     }
 

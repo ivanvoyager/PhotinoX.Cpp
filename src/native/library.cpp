@@ -22,6 +22,24 @@ namespace photinox::native
 #endif
     }
 
+    namespace
+    {
+        std::vector<std::string> CopyStringArray(char** values, int count)
+        {
+            std::vector<std::string> result;
+
+            if (!values || count <= 0)
+                return result;
+
+            result.reserve(static_cast<std::size_t>(count));
+
+            for (int index = 0; index < count; ++index)
+                result.emplace_back(values[index] ? values[index] : "");
+
+            return result;
+        }
+    }
+
     template<typename T>
     T Library::LoadExport(const char* name) const
     {
@@ -183,6 +201,12 @@ namespace photinox::native
 
             windowGetUserAgent_ = LoadExport<decltype(windowGetUserAgent_)>("Photino_GetUserAgent");
             windowClearBrowserAutoFill_ = LoadExport<decltype(windowClearBrowserAutoFill_)>("Photino_ClearBrowserAutoFill");
+
+            //dialogs
+            windowShowOpenFile_ = LoadExport<decltype(windowShowOpenFile_)>("Photino_ShowOpenFile");
+            windowShowOpenFolder_ = LoadExport<decltype(windowShowOpenFolder_)>("Photino_ShowOpenFolder");
+            windowShowSaveFile_ = LoadExport<decltype(windowShowSaveFile_)>("Photino_ShowSaveFile");
+            windowShowMessage_ = LoadExport<decltype(windowShowMessage_)>("Photino_ShowMessage");
         }
         catch (...)
         {
@@ -714,5 +738,89 @@ namespace photinox::native
     void Library::WindowClearBrowserAutoFill(void* instance) const noexcept
     {
         windowClearBrowserAutoFill_(instance);
+    }
+
+    // dialogs
+
+    std::vector<std::string> Library::WindowShowOpenFile(
+        void* instance,
+        Utf8String title,
+        Utf8String defaultPath,
+        bool multiSelect,
+        Utf8String* filters,
+        int filterCount) const
+    {
+        int resultCount = 0;
+        char** values = windowShowOpenFile_(instance, title, defaultPath, multiSelect, filters, filterCount, &resultCount);
+
+        try
+        {
+            auto result = CopyStringArray(values, resultCount);
+            FreeStringArray(values, resultCount);
+            return result;
+        }
+        catch (...)
+        {
+            FreeStringArray(values, resultCount);
+            throw;
+        }
+    }
+
+    std::vector<std::string> Library::WindowShowOpenFolder(
+        void* instance,
+        Utf8String title,
+        Utf8String defaultPath,
+        bool multiSelect) const
+    {
+        int resultCount = 0;
+        char** values = windowShowOpenFolder_(instance, title, defaultPath, multiSelect, &resultCount);
+
+        try
+        {
+            auto result = CopyStringArray(values, resultCount);
+            FreeStringArray(values, resultCount);
+            return result;
+        }
+        catch (...)
+        {
+            FreeStringArray(values, resultCount);
+            throw;
+        }
+    }
+
+    std::string Library::WindowShowSaveFile(
+        void* instance,
+        Utf8String title,
+        Utf8String defaultPath,
+        Utf8String* filters,
+        int filterCount,
+        Utf8String defaultFileName) const
+    {
+        char* value = windowShowSaveFile_(instance, title, defaultPath, filters, filterCount, defaultFileName);
+
+        if (!value)
+            return {};
+
+        try
+        {
+            std::string result(value);
+            FreeString(value);
+            return result;
+        }
+        catch (...)
+        {
+            FreeString(value);
+            throw;
+        }
+    }
+
+    DialogResult Library::WindowShowMessage(
+        void* instance,
+        Utf8String title,
+        Utf8String text,
+        DialogButtons buttons,
+        DialogIcon icon) const noexcept
+    {
+        return windowShowMessage_(instance, title, text, buttons, icon);
     }
 }
