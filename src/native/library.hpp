@@ -27,6 +27,8 @@ namespace photinox::native
         [[nodiscard]] const char* GetVersion() const noexcept;
         [[nodiscard]] RuntimeInfo GetRuntimeInfo() const noexcept;
 
+        [[nodiscard]] bool SetWebView2RuntimePath(Utf8String path) const noexcept;
+
         //memory
         [[nodiscard]] void* AllocateMemory(int size) const noexcept;
         void FreeMemory(void* value) const noexcept;
@@ -184,6 +186,8 @@ namespace photinox::native
 
         const char* (*getVersion_)() = nullptr;
         RuntimeInfo(*getRuntimeInfo_)() = nullptr;
+
+        bool (*setWebView2RuntimePath_)(Utf8String) = nullptr;
 
         //memory
         void* (*allocateMemory_)(int) = nullptr;

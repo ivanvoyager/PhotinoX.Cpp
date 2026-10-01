@@ -91,6 +91,8 @@ namespace photinox::native
             getVersion_ = LoadExport<decltype(getVersion_)>("Photino_GetNativeVersion");
             getRuntimeInfo_ = LoadExport<decltype(getRuntimeInfo_)>("Photino_GetRuntimeInfo");
 
+            setWebView2RuntimePath_ = LoadExport<decltype(setWebView2RuntimePath_)>("Photino_SetWebView2RuntimePath");
+
             //memory
             allocateMemory_ = LoadExport<decltype(allocateMemory_)>("Photino_AllocateMemory");
             freeMemory_ = LoadExport<decltype(freeMemory_)>("Photino_FreeMemory");
@@ -232,6 +234,11 @@ namespace photinox::native
     RuntimeInfo Library::GetRuntimeInfo() const noexcept
     {
         return getRuntimeInfo_();
+    }
+
+    bool Library::SetWebView2RuntimePath(Utf8String path) const noexcept
+    {
+        return setWebView2RuntimePath_(path);
     }
 
     //memory

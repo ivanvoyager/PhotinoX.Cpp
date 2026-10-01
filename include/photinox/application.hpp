@@ -50,6 +50,8 @@ namespace photinox
         [[nodiscard]] std::string_view NativeVersion() const noexcept;
         [[nodiscard]] RuntimeInfo GetRuntimeInfo() const;
 
+        Application& SetWebView2RuntimePath(std::string_view path);
+
         [[nodiscard]] bool IsRunning() const noexcept;
         [[nodiscard]] bool IsShuttingDown() const noexcept;
 
