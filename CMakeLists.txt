@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
     PhotinoX.Cpp
-    VERSION 5.3.2
+    VERSION 5.3.3
     LANGUAGES CXX
 )
 
@@ -51,6 +51,7 @@ target_sources(
             include/photinox/event_token.hpp
             include/photinox/geometry.hpp
             include/photinox/photinox.hpp
+            include/photinox/platform.hpp
             include/photinox/runtime_info.hpp
             include/photinox/window.hpp
             include/photinox/window_collection.hpp

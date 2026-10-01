@@ -2,6 +2,7 @@
 
 #include <photinox/application.hpp>
 #include <photinox/dispatcher.hpp>
+#include <photinox/platform.hpp>
 
 #include "native/library.hpp"
 #include "native/window.hpp"
@@ -144,82 +145,85 @@ namespace photinox
             return value;
         }
 
-        std::string NormalizeMacExtension(std::string_view extension)
-        {
-            extension = TrimAsciiWhitespace(extension);
-
-            while (!extension.empty() && (extension.front() == '*' || extension.front() == '.'))
-                extension.remove_prefix(1);
-
-            return std::string(extension);
-        }
-
         std::string NormalizeFileExtension(std::string_view extension)
         {
             extension = TrimAsciiWhitespace(extension);
 
-            if (extension == "*")
-                return "*";
+            if constexpr (Platform::IsMacOS)
+            {
+                if (extension == "*")
+                    return {};
 
-            while (!extension.empty() && extension.front() == '*')
-                extension.remove_prefix(1);
+                while (!extension.empty() && (extension.front() == '*' || extension.front() == '.'))
+                    extension.remove_prefix(1);
 
-            if (extension.empty())
-                return {};
+                return std::string(extension);
+            }
+            else
+            {
+                if (extension == "*")
+                    return "*";
 
-            if (extension.front() == '.')
-                return "*" + std::string(extension);
+                while (!extension.empty() && extension.front() == '*')
+                    extension.remove_prefix(1);
 
-            return "*." + std::string(extension);
+                if (extension.empty())
+                    return {};
+
+                if (extension.front() == '.')
+                    return "*" + std::string(extension);
+
+                return "*." + std::string(extension);
+            }
         }
 
         std::vector<std::string> CreateNativeFilters(std::span<const FileDialogFilter> filters)
         {
             std::vector<std::string> result;
 
-#ifdef __APPLE__
             for (const FileDialogFilter& filter : filters)
             {
-                for (const std::string& extension : filter.extensions)
+                if constexpr (Platform::IsMacOS)
                 {
-                    const std::string_view value = TrimAsciiWhitespace(extension);
+                    for (const std::string& extension : filter.extensions)
+                    {
+                        const std::string_view value = TrimAsciiWhitespace(extension);
 
-                    if (value == "*")
-                        return {};
+                        if (value == "*")
+                            return {};
 
-                    std::string normalizedExtension = NormalizeMacExtension(value);
+                        std::string normalizedExtension = NormalizeFileExtension(value);
 
-                    if (!normalizedExtension.empty())
-                        result.push_back(std::move(normalizedExtension));
+                        if (!normalizedExtension.empty())
+                            result.push_back(std::move(normalizedExtension));
+                    }
                 }
-            }
-#else
-            for (const FileDialogFilter& filter : filters)
-            {
-                const std::string_view name = TrimAsciiWhitespace(filter.name);
-
-                if (name.empty())
-                    continue;
-
-                std::string extensions;
-
-                for (const std::string& extension : filter.extensions)
+                else
                 {
-                    std::string normalizedExtension = NormalizeFileExtension(extension);
+                    const std::string_view name = TrimAsciiWhitespace(filter.name);
 
-                    if (normalizedExtension.empty())
+                    if (name.empty())
                         continue;
 
+                    std::string extensions;
+
+                    for (const std::string& extension : filter.extensions)
+                    {
+                        std::string normalizedExtension = NormalizeFileExtension(extension);
+
+                        if (normalizedExtension.empty())
+                            continue;
+
+                        if (!extensions.empty())
+                            extensions += ';';
+
+                        extensions += normalizedExtension;
+                    }
+
                     if (!extensions.empty())
-                        extensions += ';';
-
-                    extensions += normalizedExtension;
+                        result.push_back(std::string(name) + "|" + extensions);
                 }
-
-                if (!extensions.empty())
-                    result.push_back(std::string(name) + "|" + extensions);
             }
-#endif
 
             return result;
         }
@@ -610,12 +614,13 @@ namespace photinox
             assert(!impl.nativeInstance);
 
             impl.nativeInstance = instance;
-            impl.application.OnWindowCreated(window, registered);
 
-            InvokeEvent(impl.application, [&impl]
+            InvokeEvent(impl.application, [&impl, &window, registered]
             {
+                impl.application.OnWindowCreated(window, registered);
                 impl.createdHandlers();
             });
+
         }
 
         static bool ClosingCallback(void* state) noexcept
@@ -650,7 +655,10 @@ namespace photinox
                 impl.closedHandlers();
             });
 
-            impl.application.OnWindowClosed(window);
+            InvokeEvent(impl.application, [&impl, &window]
+            {
+                impl.application.OnWindowClosed(window);
+            });
         }
 
         static void FocusInCallback(void* state) noexcept
@@ -2239,10 +2247,15 @@ namespace photinox
     {
         impl_->ThrowIfClosedOrNotInitialized("WindowHandle");
 
-        return GetDispatcher().Invoke([this]
+        void* handle = GetDispatcher().Invoke([this]
         {
             return impl_->NativeLibrary().WindowGetHandle(impl_->nativeInstance);
         });
+
+        if (!handle)
+            throw std::runtime_error("Failed to get the native window handle.");
+
+        return handle;
     }
 
     unsigned int Window::ScreenDpi() const
@@ -2344,56 +2357,62 @@ namespace photinox
             return *this;
         }
 
-#if !defined(__linux__)
-        return *this;
-#endif
-
-        if (height == 0)
-            return SetLinuxChromelessDragRegions({});
-
-        const LayoutRegion region
+        if constexpr (Platform::IsLinux)
         {
-            .width = 0,
-            .height = height,
-            .margin =
-            {
-                .left = leftInset,
-                .top = topInset,
-                .right = rightInset,
-                .bottom = 0
-            },
-            .horizontalAlignment = HorizontalAlignment::Stretch,
-            .verticalAlignment = VerticalAlignment::Top
-        };
+            if (height == 0)
+                return SetLinuxChromelessDragRegions({});
 
-        return SetLinuxChromelessDragRegions(std::span(&region, 1));
+            const LayoutRegion region
+            {
+                .width = 0,
+                .height = height,
+                .margin =
+                {
+                    .left = leftInset,
+                    .top = topInset,
+                    .right = rightInset,
+                    .bottom = 0
+                },
+                .horizontalAlignment = HorizontalAlignment::Stretch,
+                .verticalAlignment = VerticalAlignment::Top
+            };
+
+            return SetLinuxChromelessDragRegions(std::span(&region, 1));
+        }
+        else
+        {
+            return *this;
+        }
     }
 
     Window& Window::SetLinuxChromelessDragRegions(std::span<const LayoutRegion> dragRegions, std::span<const LayoutRegion> noDragRegions)
     {
         impl_->ThrowIfClosedOrNotInitialized("SetLinuxChromelessDragRegions");
 
-#if !defined(__linux__)
-        return *this;
-#endif
-
-        if (dragRegions.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()) ||
-            noDragRegions.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+        if constexpr (!Platform::IsLinux)
         {
-            throw std::invalid_argument("Too many chromeless layout regions.");
+            return *this;
         }
-
-        const bool applied = GetDispatcher().Invoke([this, dragRegions, noDragRegions]
+        else
         {
-            return impl_->NativeLibrary().WindowSetChromelessDragRegions(impl_->nativeInstance,
-                dragRegions.empty() ? nullptr : dragRegions.data(), static_cast<int>(dragRegions.size()),
-                noDragRegions.empty() ? nullptr : noDragRegions.data(), static_cast<int>(noDragRegions.size()));
-        });
+            if (dragRegions.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()) ||
+                noDragRegions.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+            {
+                throw std::invalid_argument("Too many chromeless layout regions.");
+            }
 
-        if (!applied)
-            throw std::runtime_error("Failed to set Linux chromeless drag regions.");
+            const bool applied = GetDispatcher().Invoke([this, dragRegions, noDragRegions]
+            {
+                return impl_->NativeLibrary().WindowSetChromelessDragRegions(impl_->nativeInstance,
+                    dragRegions.empty() ? nullptr : dragRegions.data(), static_cast<int>(dragRegions.size()),
+                    noDragRegions.empty() ? nullptr : noDragRegions.data(), static_cast<int>(noDragRegions.size()));
+            });
 
-        return *this;
+            if (!applied)
+                throw std::runtime_error("Failed to set Linux chromeless drag regions.");
+
+            return *this;
+        }
     }
 
     // LinuxChromelessResizeBorderThickness
@@ -2416,20 +2435,23 @@ namespace photinox
             return *this;
         }
 
-#if !defined(__linux__)
-        return *this;
-#endif
-
-        const bool applied = GetDispatcher().Invoke([this, thickness]
+        if constexpr (!Platform::IsLinux)
         {
-            return impl_->NativeLibrary().WindowSetChromelessResizeBorderThickness(impl_->nativeInstance, thickness);
-        });
+            return *this;
+        }
+        else
+        {
+            const bool applied = GetDispatcher().Invoke([this, thickness]
+            {
+                return impl_->NativeLibrary().WindowSetChromelessResizeBorderThickness(impl_->nativeInstance, thickness);
+            });
 
-        if (!applied)
-            throw std::runtime_error("Failed to set Linux chromeless resize border thickness.");
+            if (!applied)
+                throw std::runtime_error("Failed to set Linux chromeless resize border thickness.");
 
-        impl_->linuxChromelessResizeBorderThickness = thickness;
-        return *this;
+            impl_->linuxChromelessResizeBorderThickness = thickness;
+            return *this;
+        }
     }
 
     // Getters
