@@ -90,7 +90,7 @@ namespace photinox
         }
 
         std::mutex mutex_;
-        const std::uint64_t ownerId_ = NextEventOwnerId();
+        const std::uint64_t ownerId_ = detail::NextEventOwnerId();
         std::uint64_t nextToken_ = 0;
     };
 }

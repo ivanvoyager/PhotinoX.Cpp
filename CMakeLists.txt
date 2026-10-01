@@ -34,6 +34,7 @@ target_sources(
         src/application.cpp
         src/dispatcher.cpp
         src/event_token.cpp
+        src/platform_paths.cpp
         src/window.cpp
         src/window_collection.cpp
     PUBLIC
@@ -76,6 +77,14 @@ if(CMAKE_DL_LIBS)
         PhotinoX.Cpp
         PRIVATE
             ${CMAKE_DL_LIBS}
+    )
+endif()
+
+if(WIN32)
+    target_link_libraries(
+        PhotinoX.Cpp
+        PRIVATE
+            Shell32
     )
 endif()
 

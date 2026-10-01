@@ -7,6 +7,7 @@
 #include "native/window.hpp"
 
 #include "event_subscription.internal.hpp"
+#include "platform_paths.internal.hpp"
 
 #include <eventpp/callbacklist.h>
 
@@ -150,8 +151,8 @@ namespace photinox
         std::string iconFile;
         std::string startString;
         std::string startUrl;
-        std::string userDataFolder;
-        std::string userAgent;
+        std::string userDataFolder = detail::GetDefaultUserDataFolder();
+        std::string userAgent = "PhotinoX WebView";
         std::string browserControlInitParameters;
 
         Point location;
@@ -270,8 +271,8 @@ namespace photinox
 
             params.parentInstance =
                 parent && parent->impl_->nativeInstance
-                    ? parent->impl_->nativeInstance
-                    : nullptr;
+                ? parent->impl_->nativeInstance
+                : nullptr;
 
             params.callbacks.createdHandler = CreatedCallback;
             params.callbacks.closingHandler = ClosingCallback;
@@ -325,7 +326,7 @@ namespace photinox
             params.browser.startString = startString.empty() ? nullptr : startString.c_str();
             params.browser.startUrl = startUrl.empty() ? nullptr : startUrl.c_str();
             params.browser.userDataFolder = userDataFolder.empty() ? nullptr : userDataFolder.c_str();
-            params.browser.userAgent = userAgent.empty() ? nullptr : userAgent.c_str();            
+            params.browser.userAgent = userAgent.empty() ? nullptr : userAgent.c_str();
             params.browser.controlInitParameters = browserControlInitParameters.empty() ? nullptr : browserControlInitParameters.c_str();
 
             params.browser.zoom = zoom;
@@ -2282,9 +2283,9 @@ namespace photinox
 
         const bool applied = GetDispatcher().Invoke([this, dragRegions, noDragRegions]
         {
-                return impl_->NativeLibrary().WindowSetChromelessDragRegions(impl_->nativeInstance,
-                    dragRegions.empty() ? nullptr : dragRegions.data(), static_cast<int>(dragRegions.size()),
-                    noDragRegions.empty() ? nullptr : noDragRegions.data(), static_cast<int>(noDragRegions.size()));
+            return impl_->NativeLibrary().WindowSetChromelessDragRegions(impl_->nativeInstance,
+                dragRegions.empty() ? nullptr : dragRegions.data(), static_cast<int>(dragRegions.size()),
+                noDragRegions.empty() ? nullptr : noDragRegions.data(), static_cast<int>(noDragRegions.size()));
         });
 
         if (!applied)
@@ -2810,7 +2811,7 @@ namespace photinox
     EventToken Window::SubscribeNewWindowRequestedHandler(NewWindowRequestedHandler handler)
     {
         impl_->ThrowIfClosed("SubscribeNewWindowRequestedHandler");
-        return impl_->eventSubscriptions.Subscribe(impl_->newWindowRequestedHandlers,  impl_->newWindowRequestedHandlerSubscriptions,  std::move(handler));
+        return impl_->eventSubscriptions.Subscribe(impl_->newWindowRequestedHandlers, impl_->newWindowRequestedHandlerSubscriptions, std::move(handler));
     }
 
     bool Window::UnsubscribeNewWindowRequestedHandler(EventToken token)
