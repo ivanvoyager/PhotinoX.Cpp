@@ -117,6 +117,7 @@ option(
 )
 
 if(PHOTINOX_BUILD_SAMPLES)
-    add_subdirectory(samples/HelloWorld)
+    add_subdirectory(samples/ChromelessDragResizeDemo)
     add_subdirectory(samples/DialogsDemo)
+    add_subdirectory(samples/HelloWorld)
 endif()
