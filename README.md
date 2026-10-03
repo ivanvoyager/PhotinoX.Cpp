@@ -2,7 +2,7 @@
 
 # PhotinoX.Cpp
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ivanvoyager/PhotinoX.Cpp)
+[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-blue)](https://deepwiki.com/ivanvoyager/PhotinoX.Cpp)
 [![Build](https://github.com/ivanvoyager/PhotinoX.Cpp/actions/workflows/build.yml/badge.svg)](https://github.com/ivanvoyager/PhotinoX.Cpp/actions/workflows/build.yml)
 [![License](https://img.shields.io/github/license/ivanvoyager/PhotinoX.Cpp?label=license)](https://github.com/ivanvoyager/PhotinoX.Cpp/blob/main/LICENSE)
 
