@@ -98,6 +98,7 @@ if(MSVC)
         PRIVATE
             /W4
             /permissive-
+            /utf-8
     )
 else()
     target_compile_options(
@@ -109,8 +110,13 @@ else()
     )
 endif()
 
-option(PHOTINOX_BUILD_SAMPLES "Build PhotinoX.Cpp samples" ON)
+option(
+    PHOTINOX_BUILD_SAMPLES
+    "Build PhotinoX.Cpp samples"
+    ${PROJECT_IS_TOP_LEVEL}
+)
 
 if(PHOTINOX_BUILD_SAMPLES)
     add_subdirectory(samples/HelloWorld)
+    add_subdirectory(samples/DialogsDemo)
 endif()

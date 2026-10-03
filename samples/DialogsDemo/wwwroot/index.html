@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PhotinoX Dialogs Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main>
+        <header>
+            <div>
+                <div class="eyebrow">PhotinoX</div>
+                <h1>Native Dialogs</h1>
+                <p>
+                    Demonstrates native file, folder, save, and message dialogs
+                    provided by the operating system.
+                </p>
+            </div>
+        </header>
+
+        <section class="dialog-grid">
+            <article class="dialog-card">
+                <h2>Open file</h2>
+                <p>Choose a single file using native file type filters.</p>
+                <button type="button" data-command="open-file">Choose file</button>
+            </article>
+
+            <article class="dialog-card">
+                <h2>Open multiple files</h2>
+                <p>Choose multiple files in a single native dialog.</p>
+                <button type="button" data-command="open-files">Choose files</button>
+            </article>
+
+            <article class="dialog-card">
+                <h2>Open folder</h2>
+                <p>Choose a single folder from the file system.</p>
+                <button type="button" data-command="open-folder">Choose folder</button>
+            </article>
+
+            <article class="dialog-card">
+                <h2>Open multiple folders</h2>
+                <p>Choose multiple folders where supported by the platform.</p>
+                <button type="button" data-command="open-folders">Choose folders</button>
+            </article>
+
+            <article class="dialog-card">
+                <h2>Save file</h2>
+                <p>Choose a destination and a default file name.</p>
+                <button type="button" data-command="save-file">Save file</button>
+            </article>
+
+            <article class="dialog-card">
+                <h2>Message dialog</h2>
+                <p>Display a native message with multiple response buttons.</p>
+                <button type="button" data-command="show-message">Show message</button>
+            </article>
+        </section>
+
+        <section class="result-panel">
+            <div class="result-header">
+                <h2>Result</h2>
+                <button id="clear-result" class="secondary-button" type="button">Clear</button>
+            </div>
+
+            <pre id="result">Choose a dialog operation.</pre>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
