@@ -45,7 +45,9 @@ int main()
         Application application;
         Window window(application);
 
-        application.SetShutdownMode(ShutdownMode::OnMainWindowClose);
+        application
+            .SetNotificationsEnabled(false)
+            .SetShutdownMode(ShutdownMode::OnMainWindowClose);
 
         const std::vector<FileDialogFilter> openFilters
         {
@@ -85,7 +87,7 @@ int main()
             .Center()
             .Load("wwwroot/index.html")
             .RegisterWebMessageReceivedHandler(
-                [&](const WebMessageReceivedEventArgs& args)
+                [&window, openFilters, saveFilters](const WebMessageReceivedEventArgs& args)
                 {
                     try
                     {
@@ -147,11 +149,7 @@ int main()
 
                         if (args.message == "save-file")
                         {
-                            const std::string path = window.ShowSaveFile(
-                                "Save a text file",
-                                {},
-                                saveFilters,
-                                "document.txt");
+                            const std::string path = window.ShowSaveFile("Save a text file", {}, saveFilters, "document.txt");
 
                             Json paths = Json::array();
 
