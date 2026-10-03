@@ -136,7 +136,7 @@ namespace photinox
         [[nodiscard]] std::string_view StartUrl() const noexcept;
         Window& SetStartUrl(std::string_view url);
 
-        Window& Load(std::string_view url);
+        Window& Load(std::string_view path);
 
         [[nodiscard]] bool ContextMenuEnabled() const;
         Window& SetContextMenuEnabled(bool enabled);

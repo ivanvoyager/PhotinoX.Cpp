@@ -3,7 +3,6 @@
 #include <nlohmann/json.hpp>
 
 #include <exception>
-#include <filesystem>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -15,18 +14,6 @@ using Json = nlohmann::json;
 
 namespace
 {
-    std::string GetFileUrl(const std::filesystem::path& path)
-    {
-        const std::u8string value = std::filesystem::absolute(path).generic_u8string();
-        const std::string utf8(reinterpret_cast<const char*>(value.data()), value.size());
-
-#ifdef _WIN32
-        return "file:///" + utf8;
-#else
-        return "file://" + utf8;
-#endif
-    }
-
     std::string ToString(DialogResult result)
     {
         switch (result)
@@ -92,13 +79,11 @@ int main()
             }
         };
 
-        const std::string startUrl = GetFileUrl("wwwroot/index.html");
-
         window
             .SetTitle("PhotinoX Dialogs Demo")
             .SetSize(1100, 760)
             .Center()
-            .Load(startUrl)
+            .Load("wwwroot/index.html")
             .RegisterWebMessageReceivedHandler(
                 [&](const WebMessageReceivedEventArgs& args)
                 {

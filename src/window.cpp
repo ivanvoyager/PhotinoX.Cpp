@@ -17,6 +17,7 @@
 #include <cctype>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <limits>
 #include <ranges>
 #include <stdexcept>
@@ -104,6 +105,20 @@ namespace photinox
         bool IsReservedScheme(std::string_view scheme) noexcept
         {
             return scheme == "http" || scheme == "https" || scheme == "file";
+        }
+
+        bool TryGetUriScheme(std::string_view value, std::string& scheme)
+        {
+            if (value.find("://") == std::string_view::npos)
+                return false;
+
+            const std::size_t colonPosition = value.find(':');
+
+            if (colonPosition == std::string_view::npos)
+                return false;
+
+            scheme = NormalizeScheme(value.substr(0, colonPosition));
+            return IsValidSchemeName(scheme);
         }
 
         struct GetMonitorsState
@@ -1830,23 +1845,54 @@ namespace photinox
         return *this;
     }
 
-    Window& Window::Load(std::string_view url)
+    Window& Window::Load(std::string_view path)
     {
         impl_->ThrowIfClosed("Load");
 
-        if (url.empty())
-            throw std::invalid_argument("url");
+        if (path.empty())
+            throw std::invalid_argument("path");
+
+        std::string resolvedUrl;
+        std::string scheme;
+
+        if (TryGetUriScheme(path, scheme) &&
+            (scheme == "http" ||
+             scheme == "https" ||
+             scheme == "file" ||
+             impl_->customSchemes.contains(scheme)))
+        {
+            resolvedUrl = path;
+        }
+        else
+        {
+            const std::filesystem::path contentPath = detail::PathFromUtf8(path);
+
+            std::filesystem::path absolutePath = std::filesystem::absolute(contentPath);
+
+            if (!std::filesystem::is_regular_file(absolutePath))
+            {
+                absolutePath = detail::GetExecutableDirectory() / contentPath;
+
+                if (!std::filesystem::is_regular_file(absolutePath))
+                {
+                    throw std::filesystem::filesystem_error("Content file was not found.", absolutePath,
+                        std::make_error_code(std::errc::no_such_file_or_directory));
+                }
+            }
+
+            resolvedUrl = detail::PathToFileUrl(absolutePath);
+        }
 
         if (!impl_->nativeInstance)
         {
-            impl_->startUrl = url;
+            impl_->startUrl = std::move(resolvedUrl);
             impl_->startString.clear();
             return *this;
         }
 
-        GetDispatcher().Invoke([this, url = std::string(url)]
+        GetDispatcher().Invoke([this, resolvedUrl = std::move(resolvedUrl)]
         {
-            impl_->NativeLibrary().WindowNavigateToUrl(impl_->nativeInstance, url.c_str());
+            impl_->NativeLibrary().WindowNavigateToUrl(impl_->nativeInstance, resolvedUrl.c_str());
         });
 
         return *this;
@@ -2215,16 +2261,18 @@ namespace photinox
     {
         impl_->ThrowIfClosedOrNotInitialized("ClearBrowserAutoFill");
 
-#if !defined(_WIN32)
-        throw std::runtime_error("ClearBrowserAutoFill is only supported on Windows.");
-#endif
-
-        GetDispatcher().Invoke([this]
+        if constexpr (Platform::IsWindows)
         {
-            impl_->NativeLibrary().WindowClearBrowserAutoFill(impl_->nativeInstance);
-        });
-
-        return *this;
+            GetDispatcher().Invoke([this]
+            {
+                impl_->NativeLibrary().WindowClearBrowserAutoFill(impl_->nativeInstance);
+            });
+            return *this;
+        }
+        else
+        {
+            throw std::runtime_error("ClearBrowserAutoFill is only supported on Windows.");
+        }
     }
 
     // Communication

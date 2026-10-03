@@ -1,7 +1,6 @@
 #include <photinox/photinox.hpp>
 
 #include <exception>
-#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -11,17 +10,6 @@ using namespace photinox;
 
 namespace
 {
-    std::string GetFileUrl(const std::filesystem::path& path)
-    {
-        const std::u8string value = std::filesystem::absolute(path).generic_u8string();
-        const std::string utf8(reinterpret_cast<const char*>(value.data()), value.size());
-
-        if constexpr (Platform::IsWindows)
-            return "file:///" + utf8;
-
-        return "file://" + utf8;
-    }
-
     std::optional<WindowEdge> ParseWindowEdge(std::string_view value) noexcept
     {
         if (value == "Top")
@@ -84,8 +72,6 @@ int main()
             .SetNotificationsEnabled(false)
             .SetShutdownMode(ShutdownMode::OnMainWindowClose);
 
-        const std::string startUrl = GetFileUrl("wwwroot/chromeless.html");
-
         window
             .SetTitle("Chromeless Demo")
             .SetChromeless(true)
@@ -93,7 +79,7 @@ int main()
             .SetSize(520, 360)
             .SetMinSize(320, 200)
             .Center()
-            .Load(startUrl)
+            .Load("wwwroot/chromeless.html")
             .RegisterWebMessageReceivedHandler(
                 [&window](const WebMessageReceivedEventArgs& args)
                 {
