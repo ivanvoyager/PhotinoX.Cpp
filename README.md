@@ -356,7 +356,7 @@ The API uses:
 - RAII and deterministic destruction;
 - deleted copy and move operations for native lifetime objects;
 - `std::unique_ptr` for implementation ownership;
-- `std::string_view` for synchronous non-owning string inputs and returned configuration views;
+- `std::string_view` for synchronous non-owning string inputs and configuration access;
 - `std::span` for temporary contiguous callback payloads;
 - `std::vector` for stable collection snapshots;
 - `std::any` for optional user-defined notification state;
@@ -374,7 +374,7 @@ Examples:
 
 - .NET events map to explicit C++ register, subscribe, and unsubscribe methods.
 - .NET `object` notification state maps to `std::any`.
-- managed observable window collections map to synchronized C++ snapshots and typed collection events.
+- managed observable window collections map to synchronized snapshots and typed collection events.
 - asynchronous exception events carry `std::exception_ptr`.
 - native handles and eventpp implementation details remain private.
 
@@ -556,7 +556,7 @@ PhotinoX continues that architectural direction as an independently maintained e
 
 - PhotinoX.Native evolves the native application runtime and ABI.
 - PhotinoX provides the managed reference implementation.
-- PhotinoX.Cpp provides a native modern C++ application framework.
+- PhotinoX.Cpp provides the modern C++ framework layer.
 - Future language frameworks can target the same application-oriented native ABI.
 
 PhotinoX.Cpp builds on the evolving PhotinoX.Native runtime and follows the shared application semantics established by PhotinoX, while expressing them through an idiomatic modern C++ API.
@@ -565,7 +565,7 @@ PhotinoX.Cpp builds on the evolving PhotinoX.Native runtime and follows the shar
 
 PhotinoX.Cpp provides the complete application and window framework layer over PhotinoX.Native.
 
-The project remains under active development. Future work will focus on API stabilization, documentation, samples, packaging, and continued alignment with PhotinoX and PhotinoX.Native.
+Future updates will maintain compatibility and semantic alignment with PhotinoX and PhotinoX.Native as the shared platform evolves.
 
 ## Contributing
 
@@ -574,5 +574,3 @@ Issues and PRs are welcome. Keep PRs focused, minimal, and consistent with the r
 ## License
 
 PhotinoX.Cpp is licensed under Apache-2.0.
-
-PhotinoX.Cpp is an independent project built on the independently maintained PhotinoX.Native fork. It is not affiliated with the original Photino organization.
