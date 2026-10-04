@@ -98,10 +98,10 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 </plist>
 PLIST
 
-rsync -a --delete \
-    --exclude "$APP_NAME.app" \
-    "$OUTPUT_DIR/" \
-    "$MACOS_DIR/"
+cp "$EXECUTABLE" "$MACOS_DIR/"
+cp "$OUTPUT_DIR/PhotinoX.Native.dylib" "$MACOS_DIR/"
+cp -R "$OUTPUT_DIR/wwwroot" "$MACOS_DIR/"
+cp -R "$OUTPUT_DIR/assets" "$MACOS_DIR/"
 
 chmod +x "$MACOS_DIR/$APP_NAME"
 
