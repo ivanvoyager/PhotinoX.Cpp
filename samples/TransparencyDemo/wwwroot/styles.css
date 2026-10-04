@@ -1,0 +1,214 @@
+:root {
+    color-scheme: dark;
+    font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: grid;
+    place-items: center;
+    padding: 28px;
+    overflow: hidden;
+    background: transparent;
+    color: #f8fafc;
+    user-select: none;
+}
+
+button {
+    font: inherit;
+}
+
+.window {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 22px;
+    background: linear-gradient(145deg, rgb(22 28 40 / 92%), rgb(11 15 24 / 88%));
+    box-shadow: 0 32px 80px rgb(0 0 0 / 38%), inset 0 1px 0 rgb(255 255 255 / 10%);
+    backdrop-filter: blur(20px);
+}
+
+.title-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 86px;
+    padding: 18px 20px 18px 26px;
+    border-bottom: 1px solid rgb(255 255 255 / 10%);
+}
+
+.eyebrow {
+    margin-bottom: 3px;
+    color: #38bdf8;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 650;
+    letter-spacing: -0.025em;
+}
+
+.close-button {
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 11px;
+    background: rgb(255 255 255 / 8%);
+    color: rgb(255 255 255 / 72%);
+    cursor: pointer;
+    font-size: 25px;
+    line-height: 1;
+}
+
+.close-button:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.content {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 16px;
+    padding: 22px 32px;
+    overflow: hidden;
+}
+
+.preview {
+    position: relative;
+    display: grid;
+    min-height: 135px;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 16px;
+}
+
+.preview-pattern {
+    position: absolute;
+    inset: 0;
+    background-color: #d4d4d8;
+    background-image:
+        linear-gradient(45deg, #a1a1aa 25%, transparent 25%),
+        linear-gradient(-45deg, #a1a1aa 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #a1a1aa 75%),
+        linear-gradient(-45deg, transparent 75%, #a1a1aa 75%);
+    background-position:
+        0 0,
+        0 12px,
+        12px -12px,
+        -12px 0;
+    background-size: 24px 24px;
+    opacity: 0.22;
+}
+
+.preview-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 250px;
+    padding: 18px 22px;
+    border: 1px solid rgb(255 255 255 / 16%);
+    border-radius: 14px;
+    background: rgb(10 15 24 / 78%);
+    box-shadow: 0 14px 36px rgb(0 0 0 / 28%);
+}
+
+.status-indicator {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 18px rgb(34 197 94 / 80%);
+}
+
+.status-label {
+    margin-bottom: 3px;
+    color: rgb(255 255 255 / 58%);
+    font-size: 12px;
+}
+
+#status {
+    font-size: 17px;
+}
+
+.description {
+    margin: 0;
+    color: rgb(255 255 255 / 64%);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 12px;
+}
+
+.actions button {
+    min-height: 42px;
+    padding: 0 17px;
+    border-radius: 11px;
+    cursor: pointer;
+}
+
+.primary-button {
+    border: 1px solid #38bdf8;
+    background: #0284c7;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.primary-button:hover {
+    background: #0369a1;
+}
+
+.secondary-button {
+    border: 1px solid rgb(255 255 255 / 14%);
+    background: rgb(255 255 255 / 7%);
+    color: rgb(255 255 255 / 82%);
+}
+
+.secondary-button:hover {
+    background: rgb(255 255 255 / 12%);
+    color: #ffffff;
+}
+
+footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgb(255 255 255 / 48%);
+    font-size: 12px;
+}
+
+footer strong {
+    color: #38bdf8;
+}

@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PhotinoX Transparency Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="window">
+        <header class="title-bar">
+            <div>
+                <div class="eyebrow">PhotinoX</div>
+                <h1>Transparency Demo</h1>
+            </div>
+
+            <button class="close-button" type="button" aria-label="Close" data-command="close">×</button>
+        </header>
+
+        <section class="content">
+            <div class="preview">
+                <div class="preview-pattern"></div>
+
+                <div class="preview-card">
+                    <span class="status-indicator"></span>
+
+                    <div>
+                        <div class="status-label">Window background</div>
+                        <strong id="status">Loading...</strong>
+                    </div>
+                </div>
+            </div>
+
+            <p class="description">
+                The area outside this panel should reveal the desktop when transparency is enabled.
+                Switching modes must not recreate or reload the WebView.
+            </p>
+
+            <div class="actions">
+                <button class="primary-button" type="button" data-command="toggle">Toggle transparency</button>
+                <button class="secondary-button" type="button" data-command="transparent">Transparent</button>
+                <button class="secondary-button" type="button" data-command="opaque">Opaque</button>
+            </div>
+
+            <footer>
+                <span>Runtime changes</span>
+                <strong id="change-count">0</strong>
+            </footer>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
