@@ -96,8 +96,7 @@ int main()
         Window window(application);
 
         application
-            .SetNotificationsEnabled(false)
-            .SetShutdownMode(ShutdownMode::OnMainWindowClose);
+            .SetNotificationsEnabled(false);
 
         window
             .SetTitle("PhotinoX Runtime Diagnostics")
