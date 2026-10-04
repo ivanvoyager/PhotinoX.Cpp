@@ -543,14 +543,20 @@ cmake --build build/release --config Release
 
 ## Samples
 
-See:
-- [Samples](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples)
+- [HelloWorld](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples/HelloWorld) demonstrates application lifetime, window events, WebView messaging, and window collection access.
+- [ChromelessDragResizeDemo](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples/ChromelessDragResizeDemo) demonstrates a custom title bar with native window dragging and resizing.
+- [CustomSchemes](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples/CustomSchemes) serves local HTML, CSS, JavaScript, and JSON through a custom URI scheme.
+- [DialogsDemo](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples/DialogsDemo) demonstrates native file, folder, save, and message dialogs.
+- [NavigationPolicyDemo](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples/NavigationPolicyDemo) demonstrates navigation interception and external browser handling.
+- [NotificationDiagnostics](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples/NotificationDiagnostics) exercises native notifications, notification events, and application shutdown handling.
+- [RuntimeDiagnostics](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples/RuntimeDiagnostics) displays native runtime, WebView engine, and platform-specific runtime information.
+- [SplashScreen](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples/SplashScreen) demonstrates hidden window initialization and a chromeless splash-screen workflow.
+- [TransparencyDemo](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples/TransparencyDemo) demonstrates startup and runtime window transparency.
+- [WindowDiagnostics](https://github.com/ivanvoyager/PhotinoX.Cpp/tree/main/samples/WindowDiagnostics) exercises window lifecycle, state, geometry, child windows, and typed events.
 
 ## Relationship to Photino
 
-Photino originally demonstrated that lightweight desktop applications could host Web UI through operating-system WebViews without bundling Electron.
-
-The original Photino documentation also described Photino.Native as a foundation that could support language wrappers for C++, Rust, Go, Java, Objective-C, and other environments.
+Photino originally demonstrated that lightweight desktop applications could host Web UI through operating-system WebViews without bundling Electron, while presenting Photino.Native as a foundation for language wrappers targeting C++, Rust, Go, Java, Objective-C, and other environments.
 
 PhotinoX continues that architectural direction as an independently maintained ecosystem:
 
@@ -563,9 +569,7 @@ PhotinoX.Cpp builds on the evolving PhotinoX.Native runtime and follows the shar
 
 ## Project status
 
-PhotinoX.Cpp provides the complete application and window framework layer over PhotinoX.Native.
-
-Future updates will maintain compatibility and semantic alignment with PhotinoX and PhotinoX.Native as the shared platform evolves.
+PhotinoX.Cpp provides the complete application and window framework layer over PhotinoX.Native. Future updates will maintain compatibility and semantic alignment with PhotinoX and PhotinoX.Native as the shared platform evolves.
 
 ## Contributing
 
