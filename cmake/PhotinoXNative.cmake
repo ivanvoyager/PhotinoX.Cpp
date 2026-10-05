@@ -94,13 +94,46 @@ if(NOT EXISTS "${PHOTINOX_NATIVE_LIBRARY}")
     )
 endif()
 
+set_property(
+    GLOBAL
+    PROPERTY PHOTINOX_NATIVE_DIRECTORY
+    "${PHOTINOX_NATIVE_DIRECTORY}"
+)
+
 function(photinox_copy_native_runtime target)
+    if(NOT TARGET "${target}")
+        message(
+            FATAL_ERROR
+            "Target does not exist: ${target}"
+        )
+    endif()
+
+    get_property(
+        photinox_native_directory
+        GLOBAL
+        PROPERTY PHOTINOX_NATIVE_DIRECTORY
+    )
+
+    if(NOT photinox_native_directory)
+        message(
+            FATAL_ERROR
+            "PhotinoX.Native runtime directory is not configured."
+        )
+    endif()
+
+    if(NOT IS_DIRECTORY "${photinox_native_directory}")
+        message(
+            FATAL_ERROR
+            "PhotinoX.Native runtime directory does not exist: ${photinox_native_directory}"
+        )
+    endif()
+
     add_custom_command(
         TARGET "${target}"
         POST_BUILD
         COMMAND
             "${CMAKE_COMMAND}" -E copy_directory
-            "${PHOTINOX_NATIVE_DIRECTORY}"
+            "${photinox_native_directory}"
             "$<TARGET_FILE_DIR:${target}>"
         VERBATIM
     )
