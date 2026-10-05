@@ -383,6 +383,13 @@ Examples:
 Add PhotinoX.Cpp to your CMake project using `FetchContent`:
 
 ```cmake
+cmake_minimum_required(VERSION 3.25)
+
+project(
+    MyApplication
+    LANGUAGES CXX
+)
+
 include(FetchContent)
 
 FetchContent_Declare(
@@ -393,13 +400,24 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(PhotinoXCpp)
 
-target_link_libraries(MyApplication
+add_executable(MyApplication main.cpp)
+
+target_link_libraries(
+    MyApplication
     PRIVATE
         PhotinoX::Cpp
 )
+
+target_compile_features(
+    MyApplication
+    PRIVATE
+        cxx_std_20
+)
+
+photinox_copy_native_runtime(MyApplication)
 ```
 
-PhotinoX.Cpp automatically downloads the required PhotinoX.Native runtime for the target platform and copies it to the application output directory.
+PhotinoX.Cpp automatically downloads the required PhotinoX.Native runtime for the target platform. Call `photinox_copy_native_runtime(<target>)` to copy the runtime to the application output directory.
 
 ## Quick start
 
@@ -487,7 +505,7 @@ PhotinoX.Native owns the native application runtime and platform-specific implem
 | macOS            | x64          | PhotinoX.Native.dylib |
 | macOS            | arm64        | PhotinoX.Native.dylib |
 
-The native runtime is resolved from the PhotinoX.Native package and copied next to the application executable by the CMake integration.
+The native runtime is resolved from the PhotinoX.Native package and copied next to the application executable by `photinox_copy_native_runtime(<target>)`.
 
 ## Requirements
 

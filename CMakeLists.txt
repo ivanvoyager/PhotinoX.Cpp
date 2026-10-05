@@ -6,6 +6,13 @@ project(
     LANGUAGES CXX
 )
 
+if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+    message(
+        FATAL_ERROR
+        "PhotinoX.Cpp does not support 32-bit Windows targets. Configure the project for x64 or ARM64."
+    )
+endif()
+
 include(cmake/PhotinoXNative.cmake)
 
 include(FetchContent)
