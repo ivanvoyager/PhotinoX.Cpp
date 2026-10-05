@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
     PhotinoX.Cpp
-    VERSION 5.3.3
+    VERSION 5.3.4
     LANGUAGES CXX
 )
 
