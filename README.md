@@ -395,7 +395,7 @@ include(FetchContent)
 FetchContent_Declare(
     PhotinoXCpp
     GIT_REPOSITORY https://github.com/ivanvoyager/PhotinoX.Cpp.git
-    GIT_TAG v5.3.4
+    GIT_TAG v5.3.5
 )
 
 FetchContent_MakeAvailable(PhotinoXCpp)
