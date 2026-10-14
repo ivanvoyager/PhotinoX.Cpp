@@ -74,27 +74,18 @@ PhotinoX and PhotinoX.Cpp share the same fundamental application semantics, incl
 
 ## Why PhotinoX.Cpp?
 
-Most C++ WebView libraries expose a single WebView object or a low-level platform wrapper around a platform browser control, leaving application lifetime, dispatch, and window management to the developer.
+Most C++ WebView libraries center their API around a WebView and leave application lifetime, message-loop ownership, dispatch, window tracking, shutdown behavior, and callback failure handling to the application.
 
-PhotinoX.Cpp provides a higher-level desktop application framework:
+PhotinoX.Cpp is application-first rather than WebView-first. It provides an explicit desktop application model in which windows, dispatch, lifecycle, notifications, and shutdown behavior are coordinated by the framework, while the operating-system WebView remains the UI renderer.
 
-- explicit application lifetime;
-- application-owned native message loop;
-- centralized dispatcher;
-- multi-window management;
-- observable application window collection;
-- configurable shutdown behavior;
-- typed application and window events;
-- removable event subscriptions;
-- native notifications with user-defined state;
-- synchronous and asynchronous dispatcher operations;
-- native callback ownership and cancellation;
-- exception-safe ABI boundaries;
-- RAII-oriented object lifetime;
-- cross-platform native packaging;
-- CMake integration.
+- **Application model:** explicit lifetime, native message-loop ownership, main-window tracking, and configurable shutdown behavior.
+- **Multi-window architecture:** observable window collection, stable snapshots, typed collection events, and dispatcher-thread mutations.
+- **Threading:** centralized dispatcher with synchronous, result-returning, asynchronous, and failure-aware operations.
+- **Lifetime and safety:** RAII, deterministic ownership, removable subscriptions, callback cancellation, and exception-safe ABI boundaries.
+- **Native integration:** operating-system windows, dialogs, notifications, platform handles, and runtime diagnostics.
+- **Cross-language runtime:** shared PhotinoX.Native application semantics across the .NET and C++ frameworks.
 
-The goal is to provide the convenience and consistency normally associated with high-level desktop frameworks while preserving the performance, control, deterministic lifetime, and native integration expected from modern C++.
+PhotinoX.Cpp combines the convenience and consistency of high-level desktop frameworks with the performance, control, deterministic lifetime, and native integration expected from modern C++.
 
 ## Features
 
@@ -174,7 +165,7 @@ Asynchronous native callbacks use explicit execution and release callbacks. If a
 
 Exceptions from asynchronous dispatcher operations are forwarded to the dispatcher unhandled-exception handlers without crossing the native ABI boundary.
 
-## Window
+### Window
 
 `Window` provides a dispatcher-aware, multi-window desktop API with explicit lifecycle management, geometry and state control, appearance and visibility settings, WebView configuration and navigation, messaging, custom schemes, native dialogs, monitor information, platform handle access, and typed removable event subscriptions.
 
