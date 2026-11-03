@@ -50,7 +50,7 @@ namespace photinox
         [[nodiscard]] std::string_view NativeVersion() const noexcept;
         [[nodiscard]] RuntimeInfo GetRuntimeInfo() const;
 
-        Application& SetWebView2RuntimePath(std::string_view path);
+        static void SetWebView2RuntimePath(std::string_view path);
         static void SetWebView2RuntimeInstallAllowed(bool allowed);
         [[nodiscard]] static bool IsWebView2RuntimeAvailable();
 

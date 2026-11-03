@@ -631,17 +631,14 @@ namespace photinox
         };
     }
 
-    Application& Application::SetWebView2RuntimePath(std::string_view path)
+    void Application::SetWebView2RuntimePath(std::string_view path)
     {
         if constexpr (Platform::IsWindows)
         {
             const std::string pathValue(path);
-
-            if (!impl_->library.SetWebView2RuntimePath(pathValue.empty() ? nullptr : pathValue.c_str()))
+            if (!native::Library::Instance().SetWebView2RuntimePath(pathValue.empty() ? nullptr : pathValue.c_str()))
                 throw std::runtime_error("Failed to set the WebView2 runtime path.");
         }
-
-        return *this;
     }
 
     void Application::SetWebView2RuntimeInstallAllowed(bool allowed)
