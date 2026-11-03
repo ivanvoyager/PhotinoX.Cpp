@@ -132,6 +132,18 @@ namespace photinox::native
         [[nodiscard]] bool WindowGetDevToolsEnabled(void* instance) const noexcept;
         void WindowSetDevToolsEnabled(void* instance, bool enabled) const noexcept;
 
+        [[nodiscard]] bool WindowGetBrowserAcceleratorKeysEnabled(void* instance) const noexcept;
+        void WindowSetBrowserAcceleratorKeysEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] bool WindowGetGeneralAutofillEnabled(void* instance) const noexcept;
+        void WindowSetGeneralAutofillEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] bool WindowGetPasswordAutosaveEnabled(void* instance) const noexcept;
+        void WindowSetPasswordAutosaveEnabled(void* instance, bool enabled) const noexcept;
+
+        [[nodiscard]] bool WindowGetReputationCheckingRequired(void* instance) const noexcept;
+        void WindowSetReputationCheckingRequired(void* instance, bool required) const noexcept;
+
         [[nodiscard]] int WindowGetZoom(void* instance) const noexcept;
         void WindowSetZoom(void* instance, int zoom) const noexcept;
 
@@ -283,6 +295,18 @@ namespace photinox::native
 
         void (*windowGetDevToolsEnabled_)(void*, bool*) = nullptr;
         void (*windowSetDevToolsEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetBrowserAcceleratorKeysEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetBrowserAcceleratorKeysEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetGeneralAutofillEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetGeneralAutofillEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetPasswordAutosaveEnabled_)(void*, bool*) = nullptr;
+        void (*windowSetPasswordAutosaveEnabled_)(void*, bool) = nullptr;
+
+        void (*windowGetReputationCheckingRequired_)(void*, bool*) = nullptr;
+        void (*windowSetReputationCheckingRequired_)(void*, bool) = nullptr;
 
         void (*windowGetZoom_)(void*, int*) = nullptr;
         void (*windowSetZoom_)(void*, int) = nullptr;

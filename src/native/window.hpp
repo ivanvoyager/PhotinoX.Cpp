@@ -134,14 +134,19 @@ namespace photinox::native
         bool mediaStreamEnabled;
         bool smoothScrollingEnabled;
         bool ignoreCertificateErrorsEnabled;
+
+        bool browserAcceleratorKeysEnabled;
+        bool generalAutofillEnabled;
+        bool passwordAutosaveEnabled;
+        bool reputationCheckingRequired;
     };
 
     static_assert(std::is_standard_layout_v<WindowInitBrowserOptions>);
-    static_assert(sizeof(WindowInitBrowserOptions) == 184);
+    static_assert(sizeof(WindowInitBrowserOptions) == 192);
 
     struct WindowInitParams
     {
-        static constexpr int NativeAbiVersion = 8;
+        static constexpr int NativeAbiVersion = 9;
 
         int size;
         int abiVersion;
@@ -163,5 +168,5 @@ namespace photinox::native
     static_assert(offsetof(WindowInitParams, geometry) == 212);
     static_assert(offsetof(WindowInitParams, browser) == 256);
 
-    static_assert(sizeof(WindowInitParams) == 440);
+    static_assert(sizeof(WindowInitParams) == 448);
 }

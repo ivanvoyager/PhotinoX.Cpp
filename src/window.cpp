@@ -319,6 +319,11 @@ namespace photinox
         bool smoothScrollingEnabled = true;
         bool ignoreCertificateErrorsEnabled = false;
 
+        bool browserAcceleratorKeysEnabled = true;
+        bool generalAutofillEnabled = true;
+        bool passwordAutosaveEnabled = false;
+        bool reputationCheckingRequired = true;
+
         std::unordered_map<std::string, CustomSchemeHandler> customSchemes;
 
         using WindowHandlerList = eventpp::CallbackList<void()>;
@@ -464,6 +469,11 @@ namespace photinox
             params.browser.mediaStreamEnabled = mediaStreamEnabled;
             params.browser.smoothScrollingEnabled = smoothScrollingEnabled;
             params.browser.ignoreCertificateErrorsEnabled = ignoreCertificateErrorsEnabled;
+
+            params.browser.browserAcceleratorKeysEnabled = browserAcceleratorKeysEnabled;
+            params.browser.generalAutofillEnabled = generalAutofillEnabled;
+            params.browser.passwordAutosaveEnabled = passwordAutosaveEnabled;
+            params.browser.reputationCheckingRequired = reputationCheckingRequired;
 
             std::size_t customSchemeIndex = 0;
             for (const auto& [scheme, handler] : customSchemes)
@@ -2021,6 +2031,128 @@ namespace photinox
 
         return *this;
     }
+
+    // BrowserAcceleratorKeysEnabled
+    bool Window::BrowserAcceleratorKeysEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->browserAcceleratorKeysEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetBrowserAcceleratorKeysEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetBrowserAcceleratorKeysEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosed("SetBrowserAcceleratorKeysEnabled");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->browserAcceleratorKeysEnabled = enabled;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, enabled]
+        {
+            impl_->NativeLibrary().WindowSetBrowserAcceleratorKeysEnabled(impl_->nativeInstance, enabled);
+        });
+
+        return *this;
+    }
+
+    // GeneralAutofillEnabled
+    bool Window::GeneralAutofillEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->generalAutofillEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetGeneralAutofillEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetGeneralAutofillEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosed("SetGeneralAutofillEnabled");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->generalAutofillEnabled = enabled;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, enabled]
+        {
+            impl_->NativeLibrary().WindowSetGeneralAutofillEnabled(impl_->nativeInstance, enabled);
+        });
+
+        return *this;
+    }
+
+    // PasswordAutosaveEnabled
+    bool Window::PasswordAutosaveEnabled() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->passwordAutosaveEnabled;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetPasswordAutosaveEnabled(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetPasswordAutosaveEnabled(bool enabled)
+    {
+        impl_->ThrowIfClosed("SetPasswordAutosaveEnabled");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->passwordAutosaveEnabled = enabled;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, enabled]
+        {
+            impl_->NativeLibrary().WindowSetPasswordAutosaveEnabled(impl_->nativeInstance, enabled);
+        });
+
+        return *this;
+    }
+
+    // ReputationCheckingRequired
+    bool Window::ReputationCheckingRequired() const
+    {
+        if (!impl_->nativeInstance)
+            return impl_->reputationCheckingRequired;
+
+        return GetDispatcher().Invoke([this]
+        {
+            return impl_->NativeLibrary().WindowGetReputationCheckingRequired(impl_->nativeInstance);
+        });
+    }
+
+    Window& Window::SetReputationCheckingRequired(bool required)
+    {
+        impl_->ThrowIfClosed("SetReputationCheckingRequired");
+
+        if (!impl_->nativeInstance)
+        {
+            impl_->reputationCheckingRequired = required;
+            return *this;
+        }
+
+        GetDispatcher().Invoke([this, required]
+        {
+            impl_->NativeLibrary().WindowSetReputationCheckingRequired(impl_->nativeInstance, required);
+        });
+
+        return *this;
+    }
+
+    // Zoom
 
     int Window::Zoom() const
     {

@@ -150,6 +150,18 @@ namespace photinox
         [[nodiscard]] bool DevToolsEnabled() const;
         Window& SetDevToolsEnabled(bool enabled);
 
+        [[nodiscard]] bool BrowserAcceleratorKeysEnabled() const;
+        Window& SetBrowserAcceleratorKeysEnabled(bool enabled);
+
+        [[nodiscard]] bool GeneralAutofillEnabled() const;
+        Window& SetGeneralAutofillEnabled(bool enabled);
+
+        [[nodiscard]] bool PasswordAutosaveEnabled() const;
+        Window& SetPasswordAutosaveEnabled(bool enabled);
+
+        [[nodiscard]] bool ReputationCheckingRequired() const;
+        Window& SetReputationCheckingRequired(bool required);
+
         [[nodiscard]] int Zoom() const;
         Window& SetZoom(int zoom);
 

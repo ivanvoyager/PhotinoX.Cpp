@@ -190,6 +190,18 @@ namespace photinox::native
             windowGetDevToolsEnabled_ = LoadExport<decltype(windowGetDevToolsEnabled_)>("Photino_GetDevToolsEnabled");
             windowSetDevToolsEnabled_ = LoadExport<decltype(windowSetDevToolsEnabled_)>("Photino_SetDevToolsEnabled");
 
+            windowGetBrowserAcceleratorKeysEnabled_ = LoadExport<decltype(windowGetBrowserAcceleratorKeysEnabled_)>("Photino_GetBrowserAcceleratorKeysEnabled");
+            windowSetBrowserAcceleratorKeysEnabled_ = LoadExport<decltype(windowSetBrowserAcceleratorKeysEnabled_)>("Photino_SetBrowserAcceleratorKeysEnabled");
+
+            windowGetGeneralAutofillEnabled_ = LoadExport<decltype(windowGetGeneralAutofillEnabled_)>("Photino_GetGeneralAutofillEnabled");
+            windowSetGeneralAutofillEnabled_ = LoadExport<decltype(windowSetGeneralAutofillEnabled_)>("Photino_SetGeneralAutofillEnabled");
+
+            windowGetPasswordAutosaveEnabled_ = LoadExport<decltype(windowGetPasswordAutosaveEnabled_)>("Photino_GetPasswordAutosaveEnabled");
+            windowSetPasswordAutosaveEnabled_ = LoadExport<decltype(windowSetPasswordAutosaveEnabled_)>("Photino_SetPasswordAutosaveEnabled");
+
+            windowGetReputationCheckingRequired_ = LoadExport<decltype(windowGetReputationCheckingRequired_)>("Photino_GetReputationCheckingRequired");
+            windowSetReputationCheckingRequired_ = LoadExport<decltype(windowSetReputationCheckingRequired_)>("Photino_SetReputationCheckingRequired");
+
             windowGetZoom_ = LoadExport<decltype(windowGetZoom_)>("Photino_GetZoom");
             windowSetZoom_ = LoadExport<decltype(windowSetZoom_)>("Photino_SetZoom");
 
@@ -658,6 +670,54 @@ namespace photinox::native
     void Library::WindowSetDevToolsEnabled(void* instance, bool enabled) const noexcept
     {
         windowSetDevToolsEnabled_(instance, enabled);
+    }
+
+    bool Library::WindowGetBrowserAcceleratorKeysEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetBrowserAcceleratorKeysEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    void Library::WindowSetBrowserAcceleratorKeysEnabled(void* instance, bool enabled) const noexcept
+    {
+        windowSetBrowserAcceleratorKeysEnabled_(instance, enabled);
+    }
+
+    bool Library::WindowGetGeneralAutofillEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetGeneralAutofillEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    void Library::WindowSetGeneralAutofillEnabled(void* instance, bool enabled) const noexcept
+    {
+        windowSetGeneralAutofillEnabled_(instance, enabled);
+    }
+
+    bool Library::WindowGetPasswordAutosaveEnabled(void* instance) const noexcept
+    {
+        bool enabled = false;
+        windowGetPasswordAutosaveEnabled_(instance, &enabled);
+        return enabled;
+    }
+
+    void Library::WindowSetPasswordAutosaveEnabled(void* instance, bool enabled) const noexcept
+    {
+        windowSetPasswordAutosaveEnabled_(instance, enabled);
+    }
+
+    bool Library::WindowGetReputationCheckingRequired(void* instance) const noexcept
+    {
+        bool required = false;
+        windowGetReputationCheckingRequired_(instance, &required);
+        return required;
+    }
+
+    void Library::WindowSetReputationCheckingRequired(void* instance, bool required) const noexcept
+    {
+        windowSetReputationCheckingRequired_(instance, required);
     }
 
     int Library::WindowGetZoom(void* instance) const noexcept
