@@ -87,7 +87,8 @@ namespace photinox
     class Application::Impl final
     {
     public:
-        native::Library library;
+        native::Library& library = native::Library::Instance();
+
         std::unique_ptr<Dispatcher> dispatcher;
         std::unique_ptr<WindowCollection> windows;
 
@@ -641,6 +642,16 @@ namespace photinox
         }
 
         return *this;
+    }
+
+    void Application::SetWebView2RuntimeInstallAllowed(bool allowed)
+    {
+        native::Library::Instance().SetWebView2RuntimeInstallAllowed(allowed);
+    }
+
+    bool Application::IsWebView2RuntimeAvailable()
+    {
+        return native::Library::Instance().IsWebView2RuntimeAvailable();
     }
 
     bool Application::IsRunning() const noexcept

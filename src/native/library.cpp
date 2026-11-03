@@ -64,6 +64,12 @@ namespace photinox::native
         return reinterpret_cast<T>(address);
     }
 
+    Library& Library::Instance()
+    {
+        static Library instance;
+        return instance;
+    }
+
     Library::Library()
     {
 #ifdef _WIN32
@@ -92,6 +98,8 @@ namespace photinox::native
             getRuntimeInfo_ = LoadExport<decltype(getRuntimeInfo_)>("Photino_GetRuntimeInfo");
 
             setWebView2RuntimePath_ = LoadExport<decltype(setWebView2RuntimePath_)>("Photino_SetWebView2RuntimePath");
+            setWebView2RuntimeInstallAllowed_ = LoadExport<decltype(setWebView2RuntimeInstallAllowed_)>("Photino_SetWebView2RuntimeInstallAllowed");
+            isWebView2RuntimeAvailable_ = LoadExport<decltype(isWebView2RuntimeAvailable_)>("Photino_IsWebView2RuntimeAvailable");
 
             //memory
             allocateMemory_ = LoadExport<decltype(allocateMemory_)>("Photino_AllocateMemory");
@@ -251,6 +259,16 @@ namespace photinox::native
     bool Library::SetWebView2RuntimePath(Utf8String path) const noexcept
     {
         return setWebView2RuntimePath_(path);
+    }
+
+    void Library::SetWebView2RuntimeInstallAllowed(bool allowed) const noexcept
+    {
+        setWebView2RuntimeInstallAllowed_(allowed);
+    }
+
+    bool Library::IsWebView2RuntimeAvailable() const noexcept
+    {
+        return isWebView2RuntimeAvailable_();
     }
 
     //memory

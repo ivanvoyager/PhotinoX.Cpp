@@ -15,8 +15,7 @@ namespace photinox::native
     class Library final
     {
     public:
-        Library();
-        ~Library();
+        static Library& Instance();
 
         Library(const Library&) = delete;
         Library& operator=(const Library&) = delete;
@@ -28,6 +27,8 @@ namespace photinox::native
         [[nodiscard]] RuntimeInfo GetRuntimeInfo() const noexcept;
 
         [[nodiscard]] bool SetWebView2RuntimePath(Utf8String path) const noexcept;
+        void SetWebView2RuntimeInstallAllowed(bool allowed) const noexcept;
+        [[nodiscard]] bool IsWebView2RuntimeAvailable() const noexcept;
 
         //memory
         [[nodiscard]] void* AllocateMemory(int size) const noexcept;
@@ -191,6 +192,9 @@ namespace photinox::native
             DialogIcon icon) const noexcept;
 
     private:
+        Library();
+        ~Library();
+
         template<typename T>
         [[nodiscard]] T LoadExport(const char* name) const;
 
@@ -200,6 +204,8 @@ namespace photinox::native
         RuntimeInfo(*getRuntimeInfo_)() = nullptr;
 
         bool (*setWebView2RuntimePath_)(Utf8String) = nullptr;
+        void (*setWebView2RuntimeInstallAllowed_)(bool) = nullptr;
+        bool (*isWebView2RuntimeAvailable_)() = nullptr;
 
         //memory
         void* (*allocateMemory_)(int) = nullptr;
