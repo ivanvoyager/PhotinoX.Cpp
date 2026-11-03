@@ -29,6 +29,7 @@ namespace photinox::native
         [[nodiscard]] bool SetWebView2RuntimePath(Utf8String path) const noexcept;
         void SetWebView2RuntimeInstallAllowed(bool allowed) const noexcept;
         [[nodiscard]] bool IsWebView2RuntimeAvailable() const noexcept;
+        [[nodiscard]] bool EnsureWebView2RuntimeAvailable() const noexcept;
 
         //memory
         [[nodiscard]] void* AllocateMemory(int size) const noexcept;
@@ -206,6 +207,7 @@ namespace photinox::native
         bool (*setWebView2RuntimePath_)(Utf8String) = nullptr;
         void (*setWebView2RuntimeInstallAllowed_)(bool) = nullptr;
         bool (*isWebView2RuntimeAvailable_)() = nullptr;
+        bool (*ensureWebView2RuntimeAvailable_)() = nullptr;
 
         //memory
         void* (*allocateMemory_)(int) = nullptr;

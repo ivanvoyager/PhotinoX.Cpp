@@ -2703,6 +2703,12 @@ namespace photinox
         if (impl_->isCreating)
             throw std::logic_error("The window is already being created.");
 
+        if constexpr (Platform::IsWindows)
+        {
+            if (!impl_->NativeLibrary().EnsureWebView2RuntimeAvailable())
+                throw std::runtime_error("Microsoft Edge WebView2 Runtime was not found.");
+        }
+
         GetDispatcher().VerifyAccessToCreateWindow();
 
         impl_->isCreating = true;

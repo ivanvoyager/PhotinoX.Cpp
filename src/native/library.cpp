@@ -100,6 +100,7 @@ namespace photinox::native
             setWebView2RuntimePath_ = LoadExport<decltype(setWebView2RuntimePath_)>("Photino_SetWebView2RuntimePath");
             setWebView2RuntimeInstallAllowed_ = LoadExport<decltype(setWebView2RuntimeInstallAllowed_)>("Photino_SetWebView2RuntimeInstallAllowed");
             isWebView2RuntimeAvailable_ = LoadExport<decltype(isWebView2RuntimeAvailable_)>("Photino_IsWebView2RuntimeAvailable");
+            ensureWebView2RuntimeAvailable_ = LoadExport<decltype(ensureWebView2RuntimeAvailable_)>("Photino_EnsureWebView2RuntimeAvailable");
 
             //memory
             allocateMemory_ = LoadExport<decltype(allocateMemory_)>("Photino_AllocateMemory");
@@ -269,6 +270,11 @@ namespace photinox::native
     bool Library::IsWebView2RuntimeAvailable() const noexcept
     {
         return isWebView2RuntimeAvailable_();
+    }
+
+    bool Library::EnsureWebView2RuntimeAvailable() const noexcept
+    {
+        return ensureWebView2RuntimeAvailable_();
     }
 
     //memory
